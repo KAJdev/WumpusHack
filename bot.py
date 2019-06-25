@@ -65,6 +65,7 @@ async def on_member_update(before, after):
 async def on_ready():
     print("Bot is ready and online.")
     print("servers: %s, ping: %s ms" % (len(bot.guilds), bot.latency * 1000))
+    await bot.user.edit(username="WumpusOS Terminal v"+version)
     for member in bot.get_all_members():
         if str(member.status) == 'offline':
             doc = users_col.find_one({'user_id': str(member.id)})
