@@ -16,7 +16,7 @@ version = "2019.0.0.1a"
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1}
 basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
-game_sites=['help.gov', 'shop.gov']
+game_sites=['help.gov', 'store.gov']
 
 owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
 help_string = "**__Commands__**\n**Connect** - Connects to another PC.\n**Editcm** - Edits your connection message.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
@@ -143,8 +143,6 @@ async def connect(ctx, ip : str = None):
                 )
                 await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s:`" % (ip), embed=embed)
                 return
-            elif ip == 'shop.gov':
-                cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
         print('Waited')
         doc = users_col.find_one({'ip': ip})
         print(doc)
@@ -294,7 +292,7 @@ async def block(ctx, user = discord.User):
         await ctx.send("`wtf who is that nerd. couldn't find him. you loser`")
 
 #Shop
-@bot.command()
+@bot.command(aliases=['store'])
 async def shop(ctx):
     embed = discord.Embed(
         embed = "Shop",
