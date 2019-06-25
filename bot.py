@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.0.3.7a"
+version = "2019.1.6.4a"
 
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1}
