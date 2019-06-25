@@ -65,6 +65,7 @@ async def on_member_update(before, after):
 async def on_ready():
     print("Bot is ready and online.")
     print("servers: %s, ping: %s ms" % (len(bot.guilds), bot.latency * 1000))
+    await bot.user.edit(username="WumpusOS Terminal v"+version)
     for member in bot.get_all_members():
         if str(member.status) == 'offline':
             doc = users_col.find_one({'user_id': str(member.id)})
@@ -152,7 +153,7 @@ async def logout(ctx):
                 doc2 = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
 
             temp_cache = cache
-            for key, value in cache.items()
+            for key, value in cache.items():
                 if key == 'away':
                     continue
                 if value['host'] == doc['ip']:
