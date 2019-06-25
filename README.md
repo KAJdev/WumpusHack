@@ -3,12 +3,13 @@ Wumpus Hack is game inside discord.
 "Hack" other players.
 Make money.
 Dominate the game.
+You control your own network. Defend it from attacks, set traps, and make the first move. Steal units, and buy better parts. Upgrade your network. Become the fastest. Become the richest, become the Wumpus.
 
 # Libary
 Wumpus Hack is coded in Discord.py
 
 # Team
-Wumpus Hack has been coded by a team of four people.
+Wumpus Hack has been developed by a team of four people.
 
 1.) Polar#5893
 -Programmer
