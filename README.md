@@ -9,6 +9,7 @@ Wumpus Hack is coded in Discord.py
 
 # Team
 Wumpus Hack has been coded by a team of four people.
+
 1.) Polar#5893
 -Programmer
 
