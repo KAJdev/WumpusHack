@@ -152,7 +152,7 @@ async def logout(ctx):
                 doc2 = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
 
             temp_cache = cache
-            for key, value in cache.items()
+            for key, value in cache.items():
                 if key == 'away':
                     continue
                 if value['host'] == doc['ip']:
