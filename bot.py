@@ -147,21 +147,22 @@ async def logout(ctx):
 
 
             global cache
-            doc2 = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
+            doc2 = None
+            if str(ctx.author.id) in cache.keys():
+                doc2 = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
+
+            temp_cache = cache
+            for key, value in cache.items()
+                if key == 'away':
+                    continue
+                if value['host'] == doc['ip']:
+                    host_user = discord.utils.get(bot.get_all_members(), id=int(key))
+                    if host_user != None:
+                        await host_user.send("`LOG: host "+value['host']+" has disconnected you from their network.`")
+                    del temp_cache[key]
+
+            cache = temp_cache
             if doc2 != None:
-                temp_cache = cache
-                for key, value in cache.items():
-                    if key == 'away':
-                        continue
-                    if value['host'] == doc['ip']:
-                        host_user = discord.utils.get(bot.get_all_members(), id=int(key))
-                        if host_user != None:
-                            await host_user.send("`LOG: host "+value['host']+" has disconnected you from their network.`")
-                        del temp_cache[key]
-
-
-
-                cache = temp_cache
                 if str(ctx.author.id) in cache.keys():
                     host_user = discord.utils.get(bot.get_all_members(), id=int(doc2['user_id']))
                     connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
@@ -170,7 +171,8 @@ async def logout(ctx):
 
                     del cache[str(ctx.author.id)]
             else:
-                del cache[str(ctx.author.id)]
+                if str(ctx.author.id) in cache.keys():
+                    del cache[str(ctx.author.id)]
 
 
 
@@ -199,6 +201,9 @@ async def connect(ctx, ip : str = None):
         return
     if str(ctx.author.id) in cache.keys():
         await ctx.author.send("`PortBindError: Port already in use. Use >disconnect to free up a port.`")
+        return
+    if user['ip'] == ip:
+        await ctx.author.send("`PortBindError: Port already in use. Cannot connect to localhost:21.`")
         return
     else:
         msg = await ctx.author.send("<a:loading2:592819419604975797> `Connecting to %s`" % (ip))
@@ -271,25 +276,43 @@ async def disconnect(ctx):
 
 @bot.command(aliases=['scrape'])
 async def scan(ctx):
-    msg = await ctx.author.send("<a:loading2:592819419604975797> `scraping for IP addresses.`")
-    try:
-        user = users_col.find_one({'user_id': str(ctx.author.id)})
-        await asyncio.sleep(calc_loading(user, 20))
-        if random.randint(1, 5) == 2:
-             await msg.edit(content="<:done:592819995843624961> `Scrape returned (0) addresses`")
-             return
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    if user == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    if str(ctx.author.id) in cache.keys():
+        await ctx.author.send("`PortBindError: Port already in use. Use >disconnect to free up a port.`")
+        return
 
-        all_docs = users_col.find({})
-        doc = None
-        while True:
-            doc = users_col.aggregate([ { '$sample': { 'size': 1 } } ])
-            if doc == user:
-                continue
-            else:
-                break
-        await msg.edit(content="<:done:592819995843624961> `Scrape returned (1) address: %s`" % (doc['ip']))
-    except Exception as e:
-        print(e)
+    time_ = calc_loading(user, 600)
+    msg = await ctx.author.send("<a:loading2:592819419604975797> `scraping for IP addresses. (this will take around %s minutes)`" % round(time_ / 60))
+
+    cache[str(ctx.author.id)] = {'status': True, 'type': 3, 'host': None}
+    await asyncio.sleep(time_)
+    if str(ctx.author.id) not in cache.keys():
+        return
+    del cache[str(ctx.author.id)]
+    if random.randint(1, 5) == 2:
+         await msg.edit(content="<:done:592819995843624961> `Scrape returned (0) addresses`")
+         return
+
+    all_docs = users_col.find({})
+    doc = None
+    while True:
+        count = users_col.count()
+        doc = users_col.find()[random.randrange(count)]
+        if doc == user:
+            continue
+        else:
+            break
+    await msg.edit(content="<:done:592819995843624961> `Scrape returned (1) address: %s`" % (doc['ip']))
+    host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
+    if host_user != None:
+        await host_user.send("`LOG: recived ping from host "+user['ip']+"`")
+
 
 
 @bot.command()
@@ -340,6 +363,16 @@ async def system(ctx):
             msg = await ctx.author.send("<a:loading2:592819419604975797> `Obtaining system information...`")
             await asyncio.sleep(calc_loading(doc, 5))
             await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
+
+
+
+@bot.command()
+async def breach(ctx):
+    pass
+
+
+
+
 
 #Edit connection message
 @system.command()
