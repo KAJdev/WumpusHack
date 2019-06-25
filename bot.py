@@ -243,12 +243,12 @@ async def disconnect(ctx):
         return
     elif str(ctx.author.id) in cache.keys():
         await ctx.author.send("<:done:592819995843624961> `Disconnected from host %s`" % (cache[str(ctx.author.id)]['host']))
-
-        doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
-        host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
-        connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
-        if host_user != None:
-            await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
+        if cache[str(ctx.author.id)]['type'] == 1:
+            doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
+            host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
+            connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
+            if host_user != None:
+                await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
 
         del cache[str(ctx.author.id)]
         return
