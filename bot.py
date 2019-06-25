@@ -8,7 +8,7 @@ print('Making Bot')
 bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = True)
 
 #Main cache
-cache = {}
+cache = {'away': {}}
 
 #Version
 version = "2019.0.3.7a"
@@ -32,6 +32,26 @@ wumpdb = myclient["wumpus-hack"]
 users_col = wumpdb['users']
 print("bot connected to database. users: " + str(users_col.count()))
 
+@bot.event
+async def on_member_update(before, after):
+    if before.status != after.status:
+        if str(after.status) == "offline":
+            if str(after.id) not in cache['away']:
+                cache['away'][str(after.id)] = users_col.find_one({'user_id': str(after.id)})['balance']
+                print("cached " + str(after))
+
+        elif str(before.status) == 'offline':
+            if str(after.id) in cache['away']:
+                difference = users_col.find_one({'user_id': str(after.id)})['balance'] - cache['away'][str(after.id)]
+                del cache['away'][str(after.id)]
+                embed = discord.Embed(
+                    title = "Report",
+                        description = "Actions have taken place since you were away.\nYou have gained %s <:coin:592831769024397332>." % (difference),
+                    color = 0x35363B
+                )
+                await after.send(embed=embed)
+                print(str(after) + " woke up")
+
 
 
 #On ready
@@ -39,6 +59,13 @@ print("bot connected to database. users: " + str(users_col.count()))
 async def on_ready():
     print("Bot is ready and online.")
     print("servers: %s, ping: %s ms" % (len(bot.guilds), bot.latency * 1000))
+    for member in bot.get_all_members():
+        if str(member.status) == 'offline':
+            doc = users_col.find_one({'user_id': str(member.id)})
+            if doc != None:
+                if str(member.id) not in cache['away']:
+                    cache['away'][str(member.id)] = doc['balance']
+                    print("cached " + str(member))
 
 
 @bot.event
