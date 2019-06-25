@@ -22,6 +22,12 @@ owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
 help_string = "**__Commands__**\n**Connect** - Connects to another PC.\n**Disonnect** - Disconnects from another PC.\n**Editcm** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
 shop_string = "**__System Upgrades__**\n**Firewall**\nCost - 5000 <:coin:592831769024397332>\n`Stops connections to your IP address.`\n`ID - 1`\n\n**DDOS Protection**\nCost - 5000 <:coin:592831769024397332>\n`Protection from DDOS attacks.`\n`ID - 2`\n\n**__PCs__**\n**Medium-end PC**\nCost - 10000 <:coin:592831769024397332>\n`ID - 3`\n\n**High-end PC**\nCost - 20000 <:coin:592831769024397332>\n`ID - 4`"
 
+#embed=discord.Embed(title="`system connection status`", description="`234.56.432.523 has started an attack on your system.`")
+#embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/591894598234800158/592847649481424896/Discord.png")
+#embed.set_footer(text="Art made by Kiwi#6666")
+#await ctx.send(embed=embed)
+
+
 #Removes the default help command
 bot.remove_command("help")
 
@@ -139,32 +145,38 @@ async def logout(ctx):
             await ctx.author.send("`Copying shared history...\nSaving history...truncating history files...`")
             await ctx.author.send("`Completed\nDeleting expired sessions... 1 Completed`")
 
-            try:
-                global cache
+
+            global cache
+            doc2 = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
+            if doc2 != None:
                 temp_cache = cache
                 for key, value in cache.items():
+                    if key == 'away':
+                        continue
                     if value['host'] == doc['ip']:
                         host_user = discord.utils.get(bot.get_all_members(), id=int(key))
                         if host_user != None:
                             await host_user.send("`LOG: host "+value['host']+" has disconnected you from their network.`")
                         del temp_cache[key]
 
+
+
                 cache = temp_cache
+                if str(ctx.author.id) in cache.keys():
+                    host_user = discord.utils.get(bot.get_all_members(), id=int(doc2['user_id']))
+                    connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
+                    if host_user != None:
+                        await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
 
-            except Exception as e:
-                print(e)
-
-            if str(ctx.author.id) in cache.keys():
-                doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
-                host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
-                connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
-                if host_user != None:
-                    await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
-
+                    del cache[str(ctx.author.id)]
+            else:
                 del cache[str(ctx.author.id)]
+
+
 
             await ctx.author.send("`Saving balance... " + str(doc['balance']) + "`<:coin:592831769024397332>")
             await ctx.author.send("[process completed]")
+            print(str(ctx.author.id) + " is now offline")
         else:
             await ctx.author.send("`Your computer is not online. Please >login`")
     else:
@@ -245,10 +257,11 @@ async def disconnect(ctx):
         await ctx.author.send("<:done:592819995843624961> `Disconnected from host %s`" % (cache[str(ctx.author.id)]['host']))
 
         doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
-        host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
-        connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
-        if host_user != None:
-            await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
+        if doc != None:
+            host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
+            connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
+            if host_user != None:
+                await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
 
         del cache[str(ctx.author.id)]
         return
@@ -295,35 +308,41 @@ async def purchase(ctx, id : int = None):
         pass
 
 #System
-@bot.command(aliases=['sys', 'stats'])
+@bot.group(aliases=['sys', 'stats'])
 async def system(ctx):
-    if ctx.guild != None:
-        await ctx.message.delete()
+    if ctx.invoked_subcommand is None:
+        if ctx.guild != None:
+            await ctx.message.delete()
 
-    doc = users_col.find_one({'user_id': str(ctx.author.id)})
-    if doc == None:
-        await ctx.author.send("`Please type >login to start your adventure!`")
-        return
-    else:
-        try:
-            sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ "GB\n **CPU** - "+str(doc['pc']['ram'])+" GHz\n **GPU** - "+str(doc['pc']['gpu'])+" GHz\n\n**__Network Information__**\n**Bandwith** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+"\n **Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+        doc = users_col.find_one({'user_id': str(ctx.author.id)})
+        if doc == None:
+            await ctx.author.send("`Please type >login to start your adventure!`")
+            return
 
-            if str(ctx.author.id) in cache.keys():
-                sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
+        if doc['online'] == False:
+            await ctx.author.send("`Your computer is not online. Please >login`")
+            return
 
-            embed = discord.Embed(
-                title = "System Information",
-                description = sys_string,
-                color = 0x7289da
-            )
-        except Exception as e:
-            print(e)
-        msg = await ctx.author.send("<a:loading2:592819419604975797> `Obtaining system information...`")
-        await asyncio.sleep(calc_loading(doc, 5))
-        await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
+        else:
+            try:
+                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ "GB (used for programs)\n **CPU** - "+str(doc['pc']['ram'])+" GHz (used for cracking)\n **GPU** - "+str(doc['pc']['gpu'])+" GHz (used for datamining)\n\n**__Network Information__**\n**Bandwith** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps (how fast things load)\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+" (protection against attacks)\n **Firewall** - "+str(doc['network']['firewall'])+" (protects against connections without a port)\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+
+                if str(ctx.author.id) in cache.keys():
+                    sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
+
+                embed = discord.Embed(
+                    title = "System Information",
+                    description = sys_string,
+                    color = 0x7289da
+                )
+            except Exception as e:
+                print(e)
+            msg = await ctx.author.send("<a:loading2:592819419604975797> `Obtaining system information...`")
+            await asyncio.sleep(calc_loading(doc, 5))
+            await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
 
 #Edit connection message
-@bot.command()
+@system.command()
 async def editcm(ctx, *, message = None):
     if message == None:
         await ctx.send("`You have not sent a replacement connection message!`")
@@ -339,6 +358,59 @@ async def editcm(ctx, *, message = None):
             users_col.update_one({'user_id': str(ctx.author.id)}, { '$set': {'connect_msg': message }})
             await ctx.send("`Updated connection message: %s`" % (message))
 
+
+@bot.command(name='print', aliases=['log'])
+async def _print(ctx, *, msg:str=None):
+    if ctx.guild != None:
+        await ctx.message.delete()
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    if user == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    if msg == None:
+        await ctx.author.send("`error in command \'print\'. A message must be provided.`")
+        return
+    if str(ctx.author.id) not in cache.keys():
+        did_do = False
+        for key, value in cache.items():
+            if key == 'away':
+                continue
+            if value['host'] == user['ip']:
+                host_user = discord.utils.get(bot.get_all_members(), id=int(key))
+                if host_user != None:
+                    await host_user.send("`LOG: ("+value['host']+") "+msg+"`")
+                    await ctx.author.send("`LOG: ("+user['ip']+") "+msg+"`")
+                    did_do = True
+
+        if did_do == False:
+            await ctx.author.send("`SocketError: not connected to any network.`")
+            return
+    else:
+        doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
+        if doc != None:
+            for key, value in cache.items():
+                if key == 'away':
+                    continue
+                if value['host'] == doc['ip']:
+                    host_user = discord.utils.get(bot.get_all_members(), id=int(key))
+                    if host_user.id == ctx.author.id:
+                        await host_user.send("`LOG: ("+user['ip']+") "+msg+"`")
+                        continue
+                    if host_user != None:
+                        await host_user.send("`LOG: ("+value['host']+") "+msg+"`")
+
+            if str(ctx.author.id) in cache.keys():
+                host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
+                if host_user != None:
+                    await host_user.send("`LOG: ("+user['ip']+") "+msg+"`")
+                return
+
+        else:
+            await ctx.author.send("`Error: server refused packets.`")
+            return
 
 #Invite
 @bot.command()
@@ -438,8 +510,10 @@ async def reset(ctx, user : discord.User = None):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send('`"\'%s\" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
+        await ctx.send('`"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
+    else:
+        raise error
 
-#Sets the bot token
+
 bot.loop.create_task(tick())
 bot.run(config.TOKEN)
