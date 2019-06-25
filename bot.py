@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {}
 
 #Version
-version = "2019.0.0.1a"
+version = "2019.0.3.7a"
 
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1}
@@ -19,8 +19,8 @@ basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
 game_sites=['help.gov', 'store.gov']
 
 owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
-help_string = "**__Commands__**\n**Connect** - Connects to another PC.\n**Editcm** - Edits your connection message.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
-shop_string = "**__System Upgrades__**\n**Firewall**\nCost - 5000 <:coin:592831769024397332>\n`Stops connections to your IP address.`\n`ID - FIREWALL`\n\n**DDOS Protection**\nCost - 5000 <:coin:592831769024397332>\n`Protection from DDOS attacks.`\n`ID - DDOS_PROT`\n\n**__PCs__**\n**Medium-end PC**\nCost - 10000 <:coin:592831769024397332>\n`ID - MEDIUM_PC`\n\n**High-end PC**\nCost - 20000 <:coin:592831769024397332>\n`ID - HIGH_PC`"
+help_string = "**__Commands__**\n**Connect** - Connects to another PC.\n**Editcm** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
+shop_string = "**__System Upgrades__**\n**Firewall**\nCost - 5000 <:coin:592831769024397332>\n`Stops connections to your IP address.`\n`ID - 1`\n\n**DDOS Protection**\nCost - 5000 <:coin:592831769024397332>\n`Protection from DDOS attacks.`\n`ID - 2`\n\n**__PCs__**\n**Medium-end PC**\nCost - 10000 <:coin:592831769024397332>\n`ID - 3`\n\n**High-end PC**\nCost - 20000 <:coin:592831769024397332>\n`ID - 4`"
 
 #Removes the default help command
 bot.remove_command("help")
@@ -155,14 +155,30 @@ async def connect(ctx, ip : str = None):
                 cache[str(ctx.author.id)] = {'status': True, 'type': 1, 'host': ip}
                 try:
                     host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
-                    print(host_user)
+                    connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
                     if host_user != None:
-                        await host_user.send("`LOG: user "+ str(ctx.author) + "("+doc['ip']+") has connected to your network.`")
+                        await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has connected to your network.`")
+                        print(connecting_user['ip'])
                         print('sent msg')
                 except Exception as e:
                     print(e)
         else:
             await msg.edit(content="<:done:592819995843624961> `TimeoutError: Server did not respond.`")
+
+@bot.command()
+async def purchase(ctx, id : int = None):
+    if str(ctx.author.id) not in cache:
+        raise commands.CommandNotFound
+        return
+    elif cache[str(ctx.author.id)]['host'] != 'store.gov':
+        raise commands.CommandNotFound
+        return
+
+    if id == None:
+        await ctx.author.send("`error in command \'purchase\'. An Item ID must be provided.`")
+        return
+    else:
+        pass
 
 #System
 @bot.command(aliases=['sys', 'stats'])
@@ -230,6 +246,15 @@ async def support(ctx):
     )
     await ctx.send(embed = embed)
 
+#Github
+@bot.command()
+async def github(ctx):
+    embed = discord.Embed(
+        title = "**Github Repository! 🔗**",
+        url = "https://github.com/KAJdev/WumpusHack",
+        color = 0x7289da
+    )
+    await ctx.send(embed = embed)
 
 #Give
 @bot.command(aliases = ["set-coins", "set_coins", "give_coins", "take-coins"])
@@ -282,14 +307,6 @@ async def reset(ctx, user : discord.User = None):
         await message.delete()
         await ctx.send("`No reply recived. Prompt expired.`")
         return
-
-#Block
-@bot.command()
-async def block(ctx, user = discord.User):
-    if ctx.author.id not in owner_ids:
-        return
-    if user == None:
-        await ctx.send("`wtf who is that nerd. couldn't find him. you loser`")
 
 #Shop
 @bot.command(aliases=['store'])
