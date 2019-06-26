@@ -45,7 +45,7 @@ async def on_member_update(before, after):
             if str(after.id) not in cache['away']:
                 doc = users_col.find_one({'user_id': str(after.id)})
                 if doc != None:
-                    cache['away'][str(after.id)] = ['balance']
+                    cache['away'][str(after.id)] = doc['balance']
                     print("cached " + str(after))
 
         elif str(before.status) == 'offline':
