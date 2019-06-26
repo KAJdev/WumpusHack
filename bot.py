@@ -409,19 +409,13 @@ async def breach(ctx):
 
     host_doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
     if host_doc != None:
-        print("Host_doc is not None")
         host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
         if host_member != None:
-            print("Host memeber is not None")
             which_user = 0
             while True:
-                print("getting random number")
                 math_problem = randomNumber()
                 answer = 2
-                print(answer)
-                print("NOW GOT IT")
                 if which_user == 0:
-                    print("Sending shit")
                     time_ = calc_time(host_doc, 4)
                     await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or your system is compromized`" % (str(time_)))
                     while True:
@@ -456,6 +450,37 @@ async def breach(ctx):
     else:
         await ctx.author.send("`Error: unknown error in getting document`")
 
+
+# the functiuons nthat we may or may not use
+async def breach_starter(host_user, host_doc, ctx, user):
+    time_ = calc_time(user, 4)
+    await ctx.author.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or the breach fails`" % (str(time_)))
+    while True:
+        try:
+            msg = await bot.wait_for('message', timeout=time_)
+            if msg.content == str(answer) and msg.author.id == ctx.author.id:
+                which_user = 0
+                break
+            else:
+                continue
+        except:
+            await ctx.author.send("`BREACH FAILED: (You did not answer the math problem in time, the breach has failed.)`")
+            break
+
+async def breach_host(host_user, host_doc, ctx, user):
+    time_ = calc_time(host_doc, 4)
+    await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or your system is compromized`" % (str(time_)))
+    while True:
+        try:
+            msg = await bot.wait_for('message', timeout=time_)
+            if msg.content == str(answer) and msg.author.id == host_member.id:
+                which_user = 1
+                break
+            else:
+                continue
+        except:
+            await host_user.send("`DEFENSE FAILED: (You did not answer the math problem in time, your computer is compromized.)`")
+            break
 
 
 
