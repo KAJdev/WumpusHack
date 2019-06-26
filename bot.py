@@ -411,40 +411,8 @@ async def breach(ctx):
     if host_doc != None:
         host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
         if host_member != None:
-            which_user = 0
-            while True:
-                math_problem = randomNumber()
-                answer = 2
-                if which_user == 0:
-                    time_ = calc_time(host_doc, 4)
-                    await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or your system is compromized`" % (str(time_)))
-                    while True:
-                        try:
-                            msg = await bot.wait_for('message', timeout=time_)
-                            if msg.content == str(answer) and msg.author.id == host_member.id:
-                                which_user = 1
-                                break
-                            else:
-                                continue
-                        except:
-                            await host_user.send("`DEFENSE FAILED: (You did not answer the math problem in time, your computer is compromized.)`")
-                            break
-
-                if which_user == 1:
-                    time_ = calc_time(user, 4)
-                    await ctx.author.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or the breach fails`" % (str(time_)))
-                    while True:
-                        try:
-                            msg = await bot.wait_for('message', timeout=time_)
-                            if msg.content == str(answer) and msg.author.id == ctx.author.id:
-                                which_user = 0
-                                break
-                            else:
-                                continue
-                        except:
-                            await ctx.author.send("`BREACH FAILED: (You did not answer the math problem in time, the breach has failed.)`")
-                            break
-                break
+            breacher = ctx.author
+            await breach_host(host_member, host_doc, ctx, user, breacher)
         else:
             await ctx.author.send("`Error: unknown error in getting user`")
     else:
@@ -452,36 +420,51 @@ async def breach(ctx):
 
 
 # the functiuons nthat we may or may not use
-async def breach_starter(host_user, host_doc, ctx, user):
+async def breach_starter(host_member, host_doc, ctx, user, breacher):
+    bypassed = False
+    math_problem = randomNumber()
+    answer = 2 #Will Change later <----
     time_ = calc_time(user, 4)
-    await ctx.author.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or the breach fails`" % (str(time_)))
+    await breacher.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or the breach fails`" % (str(time_)))
     while True:
         try:
             msg = await bot.wait_for('message', timeout=time_)
-            if msg.content == str(answer) and msg.author.id == ctx.author.id:
-                which_user = 0
+            if msg.content == str(answer) and msg.author.id == breacher.id:
+                bypassed = True
                 break
             else:
                 continue
         except:
-            await ctx.author.send("`BREACH FAILED: (You did not answer the math problem in time, the breach has failed.)`")
+            bypassed = False
             break
+    if bypassed == True:
+        await breach_host(host_member, host_doc, ctx, user, breacher)
+    if bypassed == False:
+        await breacher.send("`BREACH FAILED: (You did not answer the math problem in time, the breach has failed.)`")
+        await host_member.send("`BREACH BLOCKED: (The breach has been stopped by your defenses)`")
 
-async def breach_host(host_user, host_doc, ctx, user):
+async def breach_host(host_member, host_doc, ctx, user, breacher):
+    bypassed = False
+    math_problem = randomNumber()
+    answer = 2 #Will Change Later <----
     time_ = calc_time(host_doc, 4)
     await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or your system is compromized`" % (str(time_)))
     while True:
         try:
             msg = await bot.wait_for('message', timeout=time_)
             if msg.content == str(answer) and msg.author.id == host_member.id:
-                which_user = 1
+                bypassed = True
                 break
             else:
                 continue
         except:
-            await host_user.send("`DEFENSE FAILED: (You did not answer the math problem in time, your computer is compromized.)`")
+            bypassed = False
             break
-
+    if bypassed == True:
+        await breach_starter(host_member, host_doc, ctx, user, breacher)
+    if bypassed == False:
+        await host_member.send("`DEFENSE FAILED: (You did not answer the math problem in time, your computer is compromized.)`")
+        await breacher.send("`BREACH SUCCESFUL: (You have compromized the host's Computer)`")
 
 
 
