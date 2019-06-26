@@ -1,6 +1,6 @@
 #Imports
 print('Importing Libraries')
-import discord, pymongo, config, asyncio, random, dns, json
+import discord, pymongo, config, asyncio, random, dns, json, math
 from discord.ext import commands
 
 #Prefix
@@ -45,9 +45,10 @@ def get_all_connections_to(host):
         if key == 'away':
             continue
         else:
-            mem = discord.utils.get(bot.get_all_members(), id=int(key))
-            if mem != None:
-                connections.append(mem)
+            if value['host'] == host:
+                mem = discord.utils.get(bot.get_all_members(), id=int(key))
+                if mem != None:
+                    connections.append(mem)
     return connections
 
 @bot.event
@@ -117,6 +118,10 @@ def calc_loading(doc, base):
     load_time = base / ((doc['network']['bandwidth'] * doc['pc']['cpu']) + 1)
     return load_time
 
+def calc_time(doc, base):
+    load_time = doc['pc']['cpu'] * 10
+    return load_time
+
 #Login
 @bot.command()
 async def login(ctx):
@@ -148,7 +153,7 @@ async def login(ctx):
         await msg.edit(content="<:done:592819995843624961> `Welcome back, %s, to your Wumpus System.`" % (str(ctx.author)))
         await ctx.author.send("**```Wumpus OS [Version "+version+"]\n(c) 2019 Discord Inc. All rights reserved.\n\nC:\\Users\\%s>```**" % (str(ctx.author)))
 
-#Logout
+#Logout bs
 @bot.command()
 async def logout(ctx):
     if ctx.guild != None:
@@ -162,14 +167,6 @@ async def logout(ctx):
             new_doc = users_col.update_one(their_doc, insert_doc)
             await ctx.author.send("`Copying shared history...\nSaving history...truncating history files...`")
             await ctx.author.send("`Completed\nDeleting expired sessions... 1 Completed`")
-
-            #get a list of connections to our buddy typing >logout
-            connections = get_all_connections_to(doc['ip'])
-            for connection in connections:
-                #send dc msg to each person connected to our buddy
-                await connection.send("`LOG: Lost connection to "+doc['ip']+"`")
-                #remove each connection from our buddy
-                del cache[str(connection.id)]
 
             #if our buddy is connected to anyone
             if str(ctx.author.id) in cache.keys():
@@ -188,6 +185,15 @@ async def logout(ctx):
                                 #send dc message to person, and remove connection from cache
                                 await host_user.send("`LOG: user "+ str(ctx.author) + " ("+doc['ip']+") has disconnected from your network.`")
                                 del cache[str(ctx.author.id)]
+
+            #get a list of connections to our buddy typing >logout
+            connections = get_all_connections_to(doc['ip'])
+            for connection in connections:
+                print(str(connection))
+                #send dc msg to each person connected to our buddy
+                await connection.send("`LOG: Lost connection to "+doc['ip']+"`")
+                #remove each connection from our buddy
+                del cache[str(connection.id)]
 
             await ctx.author.send("`Saving balance... " + str(doc['balance']) + "`<:coin:592831769024397332>")
             await ctx.author.send("[process completed]")
@@ -377,11 +383,78 @@ async def system(ctx):
             await asyncio.sleep(calc_loading(doc, 5))
             await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
 
+#Generates Random Number
+def randomNumber():
+    return random.randint(1000, 999000)
 
-
+#Does 5 things, 1) Prompts user(Host) with a math question if they are online(Discord)2)Steals mOney if math is not awnsered or bruhed3)Take 1/4th of $$$, 5)Shut off (Host) PC
 @bot.command()
 async def breach(ctx):
-    pass
+    if ctx.guild != None:
+        await ctx.message.delete()
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    if user == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    if str(ctx.author.id) not in cache:
+        await ctx.author.send("`SocketError: Not connected to Network`")
+        return
+    if cache[str(ctx.author.id)]['type'] != 1:
+        await ctx.author.send("`Error: Server refused packets`")
+        return
+
+
+    host_doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
+    if host_doc != None:
+        print("Host_doc is not None")
+        host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
+        if host_member != None:
+            print("Host memeber is not None")
+            which_user = 0
+            while True:
+                print("getting random number")
+                math_problem = randomNumber()
+                answer = 2
+                print(answer)
+                print("NOW GOT IT")
+                if which_user == 0:
+                    print("Sending shit")
+                    time_ = calc_time(host_doc, 4)
+                    await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or your system is compromized`" % (str(time_)))
+                    while True:
+                        try:
+                            msg = await bot.wait_for('message', timeout=time_)
+                            if msg.content == str(answer) and msg.author.id == host_member.id:
+                                which_user = 1
+                                break
+                            else:
+                                continue
+                        except:
+                            await host_user.send("`DEFENSE FAILED: (You did not answer the math problem in time, your computer is compromized.)`")
+                            break
+
+                if which_user == 1:
+                    time_ = calc_time(user, 4)
+                    await ctx.author.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or the breach fails`" % (str(time_)))
+                    while True:
+                        try:
+                            msg = await bot.wait_for('message', timeout=time_)
+                            if msg.content == str(answer) and msg.author.id == ctx.author.id:
+                                which_user = 0
+                                break
+                            else:
+                                continue
+                        except:
+                            await ctx.author.send("`BREACH FAILED: (You did not answer the math problem in time, the breach has failed.)`")
+                            break
+                break
+        else:
+            await ctx.author.send("`Error: unknown error in getting user`")
+    else:
+        await ctx.author.send("`Error: unknown error in getting document`")
 
 
 
@@ -428,8 +501,9 @@ async def _print(ctx, *, msg:str=None):
                 host_user = discord.utils.get(bot.get_all_members(), id=int(key))
                 if host_user != None:
                     await host_user.send("`LOG: ("+value['host']+") "+msg+"`")
-                    await ctx.author.send("`LOG: ("+user['ip']+") "+msg+"`")
                     did_do = True
+
+        await ctx.author.send("`LOG: ("+user['ip']+") "+msg+"`")
 
         if did_do == False:
             await ctx.author.send("`SocketError: not connected to any network.`")
@@ -527,8 +601,6 @@ async def reset(ctx, user : discord.User = None):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         await ctx.send('`"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
-    else:
-        raise error
 
 
 bot.loop.create_task(tick())
