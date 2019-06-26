@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.1.6.4a"
+version = "2019.1.8.5a"
 
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1}
@@ -19,7 +19,7 @@ basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
 game_sites=['help.gov', 'store.gov', '0.0.0.1']
 
 owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
-help_string = "**__Commands__**\n**Connect** - Connects to another PC.\n**Disonnect** - Disconnects from another PC.\n**Editcm** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
+help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disonnect** - Disconnects from another PC.\n**Editcm** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
 shop_string = "**__System Upgrades__**\n**Firewall**\nCost - 5000 <:coin:592831769024397332>\n`Stops connections to your IP address.`\n`ID - 1`\n\n**DDOS Protection**\nCost - 5000 <:coin:592831769024397332>\n`Protection from DDOS attacks.`\n`ID - 2`\n\n**__PCs__**\n**Medium-end PC**\nCost - 10000 <:coin:592831769024397332>\n`ID - 3`\n\n**High-end PC**\nCost - 20000 <:coin:592831769024397332>\n`ID - 4`"
 
 #embed=discord.Embed(title="`system connection status`", description="`234.56.432.523 has started an attack on your system.`")
@@ -37,6 +37,18 @@ myclient = pymongo.MongoClient(config.URI)
 wumpdb = myclient["wumpus-hack"]
 users_col = wumpdb['users']
 print("bot connected to database. users: " + str(users_col.count()))
+
+
+def get_all_connections_to(host):
+    connections = []
+    for key, value in cache.items():
+        if key == 'away':
+            continue
+        else:
+            mem = discord.utils.get(bot.get_all_members(), id=int(key))
+            if mem != None:
+                connections.append(mem)
+    return connections
 
 @bot.event
 async def on_member_update(before, after):
@@ -151,36 +163,19 @@ async def logout(ctx):
             await ctx.author.send("`Copying shared history...\nSaving history...truncating history files...`")
             await ctx.author.send("`Completed\nDeleting expired sessions... 1 Completed`")
 
+            connections = get_all_connections_to(doc['ip'])
+            for connection in connections:
+                await connection.send("`LOG: Lost connection to "+doc['ip']+"`")
 
-            global cache
-            doc2 = None
             if str(ctx.author.id) in cache.keys():
-                doc2 = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
-
-            temp_cache = cache
-            for key, value in cache.items():
-                if key == 'away':
-                    continue
-                if value['host'] == doc['ip']:
-                    host_user = discord.utils.get(bot.get_all_members(), id=int(key))
-                    if host_user != None:
-                        await host_user.send("`LOG: host "+value['host']+" has disconnected you from their network.`")
-                    del temp_cache[key]
-
-            cache = temp_cache
-            if doc2 != None:
-                if str(ctx.author.id) in cache.keys():
-                    host_user = discord.utils.get(bot.get_all_members(), id=int(doc2['user_id']))
-                    connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
-                    if host_user != None:
-                        await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
-
-                    del cache[str(ctx.author.id)]
-            else:
-                if str(ctx.author.id) in cache.keys():
-                    del cache[str(ctx.author.id)]
-
-
+                outgoing = cache[str(ctx.author.id)]
+                if outgoing['type'] == 1:
+                    host_doc = users_col.find_one({'ip':outgoing['host']})
+                    if host_doc != None:
+                        host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
+                        connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
+                        if host_user != None:
+                            await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
 
             await ctx.author.send("`Saving balance... " + str(doc['balance']) + "`<:coin:592831769024397332>")
             await ctx.author.send("[process completed]")
@@ -310,7 +305,7 @@ async def scan(ctx):
     while True:
         count = users_col.count()
         doc = users_col.find()[random.randrange(count)]
-        if doc == user:
+        if doc['user_id'] == user['user_id']:
             continue
         else:
             break
@@ -485,36 +480,6 @@ async def github(ctx):
         color = 0x7289da
     )
     await ctx.send(embed = embed)
-
-#Give
-@bot.command()
-async def setmoney(ctx, user : discord.User = None, amount : int = None):
-    print("GUFAJD")
-    if ctx.author.id not in owner_ids:
-        print("no")
-        return
-    if user == None:
-        user = ctx.author
-    if amount == None:
-        amount = 1
-
-    doc = users_col.find_one({'user_id': str(user.id)})
-    if doc == None:
-        print("belhfdjgkf")
-        await ctx.author.send("wtf who is that nerd. couldn't find him. you loser")
-        return
-    print("starting BS")
-    new_doc = { '$set': {'balance': int(amount)}}
-    users_col.update_one(doc, new_doc)
-    print("IT did the bs")
-    if int(amount) < 0:
-        print("GAY")
-        await ctx.author.send("Nom nom nom, Wumpus ate some of %s's coins, they have %s coins now. They used to have %s coins but Wumpus was hungry." % (user.name, str(doc['balance'] + amount), str(doc['balance'])))
-        return
-    elif int(amount) > 0:
-        print("NotsoGay")
-        await ctx.author.send("*Blech*, Wumpus threw up his left over coins. %s picked them up. They have %s coins now. They used to have %s coins but Wumpus didn't feel good." % (user.name, str(doc['balance'] + amount), str(doc['balance'])))
-        return
 
 #Reset
 @bot.command()
