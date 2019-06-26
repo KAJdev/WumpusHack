@@ -33,7 +33,7 @@ bot.remove_command("help")
 
 #Establishes connection to MongoDB
 print('Connecting to MongoDB')
-myclient = pymongo.MongoClient("mongodb://hytexxity:hytexxity@cluster0-shard-00-00-7rhwq.mongodb.net:27017,cluster0-shard-00-01-7rhwq.mongodb.net:27017,cluster0-shard-00-02-7rhwq.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true")
+myclient = pymongo.MongoClient(config.URI)
 wumpdb = myclient["wumpus-hack"]
 users_col = wumpdb['users']
 print("bot connected to database. users: " + str(users_col.count()))
