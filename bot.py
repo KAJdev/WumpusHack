@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.1.8.7a"
+version = "2019.1.8.8a"
 
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1}
@@ -576,7 +576,6 @@ async def _print(ctx, *, msg:str=None):
         await ctx.author.send("`error in command \'print\'. A message must be provided.`")
         return
     if str(ctx.author.id) not in cache.keys():
-        did_do = False
         for key, value in cache.items():
             if key == 'away':
                 continue
@@ -584,13 +583,9 @@ async def _print(ctx, *, msg:str=None):
                 host_user = discord.utils.get(bot.get_all_members(), id=int(key))
                 if host_user != None:
                     await host_user.send("`LOG: ("+value['host']+") "+msg+"`")
-                    did_do = True
 
         await ctx.author.send("`LOG: ("+user['ip']+") "+msg+"`")
 
-        if did_do == False:
-            await ctx.author.send("`SocketError: not connected to any network.`")
-            return
     else:
         doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
         if doc != None:
