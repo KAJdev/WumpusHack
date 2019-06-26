@@ -166,6 +166,7 @@ async def logout(ctx):
             connections = get_all_connections_to(doc['ip'])
             for connection in connections:
                 await connection.send("`LOG: Lost connection to "+doc['ip']+"`")
+                del cache[str(connection.id)]
 
             if str(ctx.author.id) in cache.keys():
                 outgoing = cache[str(ctx.author.id)]
@@ -175,7 +176,9 @@ async def logout(ctx):
                         host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
                         connecting_user = users_col.find_one({'user_id': str(ctx.author.id)})
                         if host_user != None:
-                            await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
+                            if host_user.id != ctx.author.id:
+                                await host_user.send("`LOG: user "+ str(ctx.author) + " ("+connecting_user['ip']+") has disconnected from your network.`")
+                                del cache[str(ctx.author.id)]
 
             await ctx.author.send("`Saving balance... " + str(doc['balance']) + "`<:coin:592831769024397332>")
             await ctx.author.send("[process completed]")
