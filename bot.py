@@ -399,8 +399,7 @@ async def system(ctx):
 def randomNumber():
     return random.randint(1000, 999000)
 
-#Does 5 things, 1) Prompts user(Host) with a math question if they are online(Discord)2)Steals mOney if math is not awnsered or bruhed3)Take 1/4th of $$$, 5)Shut off (Host) PC
-@bot.command()
+@bot.command(aliases=['hack', 'br', 'ddos'])
 async def breach(ctx):
     user = users_col.find_one({'user_id': str(ctx.author.id)})
     if user['breach'] != True:
