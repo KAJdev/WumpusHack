@@ -2,6 +2,7 @@
 print('Importing Libraries')
 import discord, pymongo, config, asyncio, random, dns, json, math
 from discord.ext import commands
+from datetime import datetime
 
 #Prefix
 print('Making Bot')
@@ -22,6 +23,8 @@ owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
 help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disonnect** - Disconnects from another PC.\n**Editcm** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
 shop_string = "**__Network Upgrades__**\n**Firewall**\nCost - 50000 <:coin:592831769024397332>\n`Temporary 12 Hour Firewall blocking all connecions.`\n`ID - 1`\n\n**DDOS Protection**\nCost - 80000 <:coin:592831769024397332>\n`Adds extra time on math problems.`\n`ID - 2`\n\n**Bandwidth**\nCost - 1000 <:coin:592831769024397332>\n`Improves loading times and breach times.`\n`ID - 3`\n\n**__PC Upgrades__**\n**CPU**\nCost - 500 <:coin:592831769024397332>\n`Improves your CPU's Ghz by .5`\n`ID - 4`\n\n**GPU**\nCost - 600 <:coin:592831769024397332>\n`Improves your GPU's Ghz by .3`\n`ID - 5`\n\n**RAM**\nCost - 500 <:coin:592831769024397332>\n`Improves RAM by 1GB`\n`ID - 6`"
 
+shop_items = [{'name': "GTX 1060", 'type': 'gpu', 'system': 5, 'cost': 5000}, {'name': "AMD Athlon II X3", 'type': 'cpu', 'system': 2, 'cost': 1500}, {'name': "Intel core i3", 'type': 'cpu', 'system': 4, 'cost': 1500}, {'name': "4GB RAM Stick", 'type': 'ram', 'system': 4, 'cost': 4000}, {'name': "8GB RAM Stick", 'type': 'ram', 'system': 8, 'cost': 9000}, {'name': "16GB RAM Stick", 'type': 'ram', 'system': 16, 'cost': 20000}]
+
 #embed=discord.Embed(title="`system connection status`", description="`234.56.432.523 has started an attack on your system.`")
 #embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/591894598234800158/592847649481424896/Discord.png")
 #embed.set_footer(text="Art made by Kiwi#6666")
@@ -37,6 +40,10 @@ myclient = pymongo.MongoClient(config.URI)
 wumpdb = myclient["wumpus-hack"]
 users_col = wumpdb['users']
 print("bot connected to database. users: " + str(users_col.count()))
+
+
+def get_day_of_year():
+    return datetime.now().timetuple().tm_yday
 
 
 def get_all_connections_to(host):
@@ -165,6 +172,11 @@ async def logout(ctx):
     doc = users_col.find_one({'user_id': str(ctx.author.id)})
     if doc != None:
         if doc['online'] == True:
+            if str(ctx.author.id) in cache.keys():
+                if cache[str(ctx.author.id)]['type'] == 4:
+                    await ctx.author.send("`PermissionError: Invalid permissions for this action`")
+                    return
+
             await ctx.author.send("`Saving session...`")
             their_doc = {'user_id': str(ctx.author.id)}
             insert_doc = { '$set': {'online': False} }
@@ -232,7 +244,7 @@ async def connect(ctx, ip : str = None):
         msg = await ctx.author.send("<a:loading2:592819419604975797> `Connecting to %s`" % (ip))
         print('User '+str(ctx.author.id)+ " is now connecting to " + ip)
 
-        await asyncio.sleep(calc_loading(user, 10))
+        await asyncio.sleep(calc_loading(user, 20))
         if ip in game_sites:
             if ip == 'help.gov':
                 embed = discord.Embed(title="https://help.gov", description = help_string, color = 0x7289da)
@@ -240,6 +252,12 @@ async def connect(ctx, ip : str = None):
                 cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                 return
             if ip == 'store.gov':
+                shop_string = "Welcome to the shop! Here you can buy PC upgrades, and more!\nYour balance - %s <:coin:592831769024397332>\n\n" % (user['balance'])
+                random.seed(get_day_of_year())
+                items = random.sample(shop_items, 5)
+                for item in items:
+                    shop_string = shop_string + "**%s**\n%s - %s\ncost: %s <:coin:592831769024397332>\n`>purchase %s`\n\n" % (item['name'], item['type'], str(item['system']), str(item['cost']), item['name'])
+
                 embed = discord.Embed(
                     title = "https://store.gov",
                     description = shop_string,
@@ -282,6 +300,10 @@ async def disconnect(ctx):
         await ctx.author.send("`Please type >login to start your adventure!`")
         return
     elif str(ctx.author.id) in cache.keys():
+        if cache[str(ctx.author.id)]['type'] == 4:
+            await ctx.author.send("`PermissionError: Invalid permissions for this action`")
+            return
+
         await ctx.author.send("<:done:592819995843624961> `Disconnected from host %s`" % (cache[str(ctx.author.id)]['host']))
 
         doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
@@ -339,16 +361,23 @@ async def scan(ctx):
 
 
 @bot.command()
-async def purchase(ctx, *, id:int=None):
+async def purchase(ctx, *, id:str=None):
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
     if str(ctx.author.id) not in cache:
         raise commands.CommandNotFound
         return
     elif cache[str(ctx.author.id)]['host'] != 'store.gov':
         raise commands.CommandNotFound
         return
-    user = users_col.find_one({'user_id': str(ctx.author.id)})
+
     member = ctx.author
-    print("Test")
+
+    random.seed(get_day_of_year())
+    items = random.sample(shop_items, 5)
+
     if ctx.guild != None:
         await ctx.message.delete()
     if user == None:
@@ -363,68 +392,51 @@ async def purchase(ctx, *, id:int=None):
     elif id == None:
         await ctx.author.send("`ERROR: Please specify an ID to purchase`")
         return
-    elif id >= 1:
-        await ctx.author.send("`Are you sure you wan't to purchase this item?`\n`Respond with`**`Y`** or **`N`**")
-        msg = await bot.wait_for('message')
-        if msg.content.lower() == "y" and msg.author.id == ctx.author.id:
-            print("Y")
-            if id == 1:
-                price = 50000
-                itemname = "A Firewall"
-                dbname = user['network']['firewall']
-                dbvalue = True
-                print("1")
-            if id == 2:
-                price = 80000
-                itemname = "DDOS Protection"
-                dbname = user['network']['ddos_pro']
-                dbvalue = True
-                print("2")
-            if id == 3:
-                price = 1000
-                itemname = "More Bandwidth"
-                dbname = user['network']['bandwidth']
-                dbvalue = dbname + 1
-                print("3")
-            if id == 4:
-                price = 500
-                itemname = "Higher CPU Speed"
-                dbname = user['pc']['cpu']
-                dbvalue = dbname + 1
-                print(price)
-                print("4")
-            if id == 5:
-                price = 600
-                itemname = "Higher GPU Speed"
-                dbname = user['pc']['gpu']
-                dbvalue = dbname + 1
-                print("5")
-            if id == 6:
-                print("six")
-                price = 500
-                itemname = "Higher RAM capacity"
-                itemdoc = {'user_id': str(ctx.author.id)}
-                value = user['pc']['ram']
-                newdoc = { '$set': {'pc': pc, 'ram': value + 1}}
-                print("Updating new Doc")
-                users_col.update_one(itemdoc, newdoc)
-                print("YEET")
-                print("6")
-            print("Next")
-            old_doc = {'user_id': str(ctx.author.id)}
-            print("got old doc")
-            new_money = user['balance'] - price
-            new_doc = { '$set': {'balance': new_money}}
-            print("Got new doc")
-            users_col.update_one(old_doc, new_doc)
-            print("Took Money Away")
-            await ctx.author.send("`You have just purchased `" + itemname + " for " + price + "<:coin:592831769024397332>!")
-            if id == 1:
-                twelvehourtimer(user, member, ctx)
+
+    # check to see if the Item they specified is in today's list of items
+    elif any(d['name'] == id for d in items):
+
+        # grab that item object
+        item = None
+        for i in items:
+            if i['name'] == id:
+                item = i
+        if item == None:
+            await ctx.author.send("`LOG: (store.gov) unknown error occured when finding item.")
             return
-        elif msg.content == "N" or "n":
-            print("N")
-            return
+
+        await ctx.author.send("`LOG: (store.gov) Are you sure you want to purchase this item? Respond with `Y` or `N")
+
+        #start loop
+        while True:
+            msg = await bot.wait_for('message')
+            if msg.content.lower() == "y" and msg.author.id == ctx.author.id:
+                # check for enough cash
+                if user['balance'] >= item['cost']:
+                    # create a new PC dict
+                    new_pc = {'cpu': user['pc']['cpu'], 'ram': user['pc']['ram'], 'gpu': user['pc']['gpu']}
+
+                    #replace the items modifying type with what the user bought
+                    new_pc[item['type']] = item['system']
+
+                    # pdate the document in the database
+                    users_col.update_one({'user_id': str(ctx.author.id)}, {'$set':{'balance': user['balance'] - item['cost'], 'pc': new_pc}})
+
+                    #send confirmation message
+                    await ctx.author.send("`LOG: (store.gov) You have just purchased `" + id + " for " + str(item['cost']) + "<:coin:592831769024397332>!")
+                    return
+                else:
+                    await ctx.author.send("`LOG: (store.gov) Insufficient balance.`")
+                    return
+
+            elif msg.content.lower() == 'n' and msg.author.id == ctx.author.id:
+                await ctx.author.send("`LOG: (store.gov) Purchase canceled.`")
+                break
+            else:
+                continue
+    else:
+        await ctx.author.send("`LOG: (store.gov) Not a valid ID.`")
+        return
 
 async def twelvehourtimer(member, ctx):
     query = {'user_id': str(ctx.author.id)}
@@ -454,7 +466,7 @@ async def system(ctx):
 
         else:
             try:
-                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ "GB (used for programs)\n **CPU** - "+str(doc['pc']['ram'])+" GHz (used for cracking)\n **GPU** - "+str(doc['pc']['gpu'])+" GHz (used for datamining)\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps (how fast things load)\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+" (protection against attacks)\n **Firewall** - "+str(doc['network']['firewall'])+" (protects against connections without a port)\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ "GB (used for programs)\n **CPU** - "+str(doc['pc']['cpu'])+" GHz (used for cracking)\n **GPU** - "+str(doc['pc']['gpu'])+" GHz (used for datamining)\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps (how fast things load)\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+" (protection against attacks)\n **Firewall** - "+str(doc['network']['firewall'])+" (protects against connections without a port)\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
                 if str(ctx.author.id) in cache.keys():
                     sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
@@ -472,7 +484,9 @@ async def system(ctx):
 
 #Generates Random Number
 def randomNumber():
-    return random.randint(1000, 999000)
+    random.seed(datetime.utcnow())
+    num = random.randint(1, 30)
+    return num * num
 
 @bot.command(aliases=['hack', 'br', 'ddos'])
 async def breach(ctx):
@@ -498,8 +512,9 @@ async def breach(ctx):
         if host_doc != None:
             host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
             if host_member != None:
+                cache[str(host_member.id)] = {'status': False, 'type': 4, 'host': None}
                 breacher = ctx.author
-                await ctx.author.send("`BREACH: A breach attack has been started... Waiting for Host's Reply..`")
+                await ctx.author.send("`BREACH: A breach attack has been started... Sent initiation packets, awaiting host.`")
                 await breach_host(host_member, host_doc, ctx, user, breacher)
             else:
                 await ctx.author.send("`Error: unknown error in getting user`")
@@ -513,16 +528,18 @@ async def breach(ctx):
 async def breach_starter(host_member, host_doc, ctx, user, breacher):
     bypassed = False
     math_problem = randomNumber()
-    answer = 2 #Will Change later <----
+    answer = math.sqrt(math_problem)
     time_ = calc_time(user, 4)
-    await breacher.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or the breach fails`" % (str(time_)))
+    await breacher.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". You have %s seconds. or the breach fails`" % (str(time_)))
     while True:
         try:
             msg = await bot.wait_for('message', timeout=time_)
             if msg.content == str(answer) and msg.author.id == breacher.id:
+                await breacher.send("`BREACH: Correct, retaliation sent.`")
                 bypassed = True
                 break
             else:
+                await breacher.send("`BREACH: Error, incorrect. re-submit answer.`")
                 continue
         except:
             bypassed = False
@@ -532,27 +549,37 @@ async def breach_starter(host_member, host_doc, ctx, user, breacher):
     if bypassed == False:
         await breacher.send("`BREACH FAILED: (You did not answer the math problem in time, the breach has failed.)`")
         await host_member.send("`BREACH BLOCKED: (The breach has been stopped by your defenses)`")
+        await breacher.send("`INFO: A Cooldown for Breaching has been set on your account for 10 minutes.`")
+        hackercooldownadd = { '$set': {'breach': True}}
+        givecooldown = users_col.update_one(hackers_oldfunds, hackercooldownadd)
+        await asyncio.sleep(600)
+        await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
+        hackercooldownrem = { '$set': {'breach': False}}
+        removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
+        del cache[str(breacher.id)]
+        del cache[str(host_member.id)]
 
 async def breach_host(host_member, host_doc, ctx, user, breacher):
     bypassed = False
     math_problem = randomNumber()
-    answer = 2 #Will Change Later <----
+    answer = math.sqrt(math_problem)
     time_ = calc_time(host_doc, 4)
-    await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". Round to the nearest 10th. You have %s seconds. or your system is compromized`" % (str(time_)))
+    await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". You have %s seconds. or your system is compromized`" % (str(time_)))
     while True:
         try:
             msg = await bot.wait_for('message', timeout=time_)
             if msg.content == str(answer) and msg.author.id == host_member.id:
                 bypassed = True
+                await host_member.send("`BREACH: Correct, retaliation sent.`")
                 break
             else:
+                await host_member.send("`BREACH: Error, incorrect. re-submit answer.`")
                 continue
         except:
             bypassed = False
             break
     if bypassed == True:
         await breach_starter(host_member, host_doc, ctx, user, breacher)
-
 
     if bypassed == False:
         await host_member.send("`DEFENSE FAILED: (You did not answer the math problem in time, your computer is compromized.)`")
@@ -765,6 +792,8 @@ async def reset(ctx, user : discord.User = None):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         await ctx.send('`"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
+    else:
+        raise error
 
 
 bot.loop.create_task(tick())
