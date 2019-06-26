@@ -43,20 +43,25 @@ async def on_member_update(before, after):
     if before.status != after.status:
         if str(after.status) == "offline":
             if str(after.id) not in cache['away']:
-                cache['away'][str(after.id)] = users_col.find_one({'user_id': str(after.id)})['balance']
-                print("cached " + str(after))
+                doc = users_col.find_one({'user_id': str(after.id)})
+                if doc != None:
+                    cache['away'][str(after.id)] = ['balance']
+                    print("cached " + str(after))
 
         elif str(before.status) == 'offline':
             if str(after.id) in cache['away']:
-                difference = users_col.find_one({'user_id': str(after.id)})['balance'] - cache['away'][str(after.id)]
-                del cache['away'][str(after.id)]
-                embed = discord.Embed(
-                    title = "Report",
-                        description = "Actions have taken place since you were away.\nYou have gained %s <:coin:592831769024397332>." % (difference),
-                    color = 0x35363B
-                )
-                await after.send(embed=embed)
-                print(str(after) + " woke up")
+                doc = users_col.find_one({'user_id': str(after.id)})
+                if doc != None:
+                    difference = doc['balance'] - cache['away'][str(after.id)]
+                    del cache['away'][str(after.id)]
+                    embed = discord.Embed(
+                        title = "Report",
+                            description = "Actions have taken place since you were away.\nYou have gained %s <:coin:592831769024397332>." % (difference),
+                        color = 0x35363B
+                    )
+                    if doc['online'] == True:
+                        await after.send(embed=embed)
+                    print(str(after) + " woke up")
 
 
 
