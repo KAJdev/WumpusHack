@@ -20,7 +20,7 @@ game_sites=['help.gov', 'store.gov', '0.0.0.1']
 
 owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
 help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disonnect** - Disconnects from another PC.\n**Editcm** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
-shop_string = "**__System Upgrades__**\n**Firewall**\nCost - 5000 <:coin:592831769024397332>\n`Stops connections to your IP address.`\n`ID - 1`\n\n**DDOS Protection**\nCost - 5000 <:coin:592831769024397332>\n`Protection from DDOS attacks.`\n`ID - 2`\n\n**__PCs__**\n**Medium-end PC**\nCost - 10000 <:coin:592831769024397332>\n`ID - 3`\n\n**High-end PC**\nCost - 20000 <:coin:592831769024397332>\n`ID - 4`"
+shop_string = "**__Network Upgrades__**\n**Firewall**\nCost - 50000 <:coin:592831769024397332>\n`Temporary 12 Hour Firewall blocking all connecions.`\n`ID - 1`\n\n**DDOS Protection**\nCost - 80000 <:coin:592831769024397332>\n`Adds extra time on math problems.`\n`ID - 2`\n\n**Bandwidth**\nCost - 1000 <:coin:592831769024397332>\n`Improves loading times and breach times.`\n`ID - 3`\n\n**__PC Upgrades__**\n**CPU**\nCost - 500 <:coin:592831769024397332>\n`Improves your CPU's Ghz by .5`\n`ID - 4`\n\n**GPU**\nCost - 600 <:coin:592831769024397332>\n`Improves your GPU's Ghz by .3`\n`ID - 5`\n\n**RAM**\nCost - 500 <:coin:592831769024397332>\n`Improves RAM by 1GB`\n`ID - 6`"
 
 #embed=discord.Embed(title="`system connection status`", description="`234.56.432.523 has started an attack on your system.`")
 #embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/591894598234800158/592847649481424896/Discord.png")
@@ -119,8 +119,11 @@ def calc_loading(doc, base):
     return load_time
 
 def calc_time(doc, base):
-    load_time = doc['pc']['cpu'] * 10
-    return load_time
+    if doc['network']['ddos_pro'] == True:
+        load_time = (doc['pc']['cpu'] + doc['network']['bandwidth']) * 15
+        return load_time
+    elif doc['network']['ddos_pro'] == False:
+        load_time = (doc['pc']['cpu'] + doc['network']['bandwidth']) * 10
 
 #Login
 @bot.command()
@@ -336,18 +339,27 @@ async def scan(ctx):
 
 @bot.command()
 async def purchase(ctx, id : int = None):
+    if ctx.guild != None:
+        await ctx.message.delete()
+    if user == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
     if str(ctx.author.id) not in cache:
-        raise commands.CommandNotFound
+        await ctx.author.send("`SocketError: Not connected to Network`")
         return
-    elif cache[str(ctx.author.id)]['host'] != 'store.gov':
-        raise commands.CommandNotFound
+    elif id == None:
+        await ctx.author.send("`ERROR: Please specify an ID to purchase`")
         return
-
-    if id == None:
-        await ctx.author.send("`error in command \'purchase\'. An Item ID must be provided.`")
+    elif id == 1:
+        await ctx.author.send("`Purchase: This is how you purchase item 1 -COMING SOON-`")#changing it duh
         return
     else:
-        pass
+        await ctx.author.send("`ERROR: An unknown error occured.`")
+        return
+
 
 #System
 @bot.group(aliases=['sys', 'stats'])
@@ -367,7 +379,7 @@ async def system(ctx):
 
         else:
             try:
-                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ "GB (used for programs)\n **CPU** - "+str(doc['pc']['ram'])+" GHz (used for cracking)\n **GPU** - "+str(doc['pc']['gpu'])+" GHz (used for datamining)\n\n**__Network Information__**\n**Bandwith** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps (how fast things load)\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+" (protection against attacks)\n **Firewall** - "+str(doc['network']['firewall'])+" (protects against connections without a port)\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ "GB (used for programs)\n **CPU** - "+str(doc['pc']['ram'])+" GHz (used for cracking)\n **GPU** - "+str(doc['pc']['gpu'])+" GHz (used for datamining)\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps (how fast things load)\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+" (protection against attacks)\n **Firewall** - "+str(doc['network']['firewall'])+" (protects against connections without a port)\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
                 if str(ctx.author.id) in cache.keys():
                     sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
