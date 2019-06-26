@@ -122,8 +122,9 @@ def calc_time(doc, base):
     if doc['network']['ddos_pro'] == True:
         load_time = (doc['pc']['cpu'] + doc['network']['bandwidth']) * 15
         return load_time
-    elif doc['network']['ddos_pro'] == False:
+    else:
         load_time = (doc['pc']['cpu'] + doc['network']['bandwidth']) * 10
+        return load_time
 
 #Login
 @bot.command()
@@ -338,7 +339,16 @@ async def scan(ctx):
 
 
 @bot.command()
-async def purchase(ctx, id : int = None):
+async def purchase(ctx, *, id:int=None):
+    if str(ctx.author.id) not in cache:
+        raise commands.CommandNotFound
+        return
+    elif cache[str(ctx.author.id)]['host'] != 'store.gov':
+        raise commands.CommandNotFound
+        return
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    member = ctx.author
+    print("Test")
     if ctx.guild != None:
         await ctx.message.delete()
     if user == None:
@@ -353,13 +363,78 @@ async def purchase(ctx, id : int = None):
     elif id == None:
         await ctx.author.send("`ERROR: Please specify an ID to purchase`")
         return
-    elif id == 1:
-        await ctx.author.send("`Purchase: This is how you purchase item 1 -COMING SOON-`")#changing it duh
-        return
-    else:
-        await ctx.author.send("`ERROR: An unknown error occured.`")
-        return
+    elif id >= 1:
+        await ctx.author.send("`Are you sure you wan't to purchase this item?`\n`Respond with`**`Y`** or **`N`**")
+        msg = await bot.wait_for('message')
+        if msg.content.lower() == "y" and msg.author.id == ctx.author.id:
+            print("Y")
+            if id == 1:
+                price = 50000
+                itemname = "A Firewall"
+                dbname = user['network']['firewall']
+                dbvalue = True
+                print("1")
+            if id == 2:
+                price = 80000
+                itemname = "DDOS Protection"
+                dbname = user['network']['ddos_pro']
+                dbvalue = True
+                print("2")
+            if id == 3:
+                price = 1000
+                itemname = "More Bandwidth"
+                dbname = user['network']['bandwidth']
+                dbvalue = dbname + 1
+                print("3")
+            if id == 4:
+                price = 500
+                itemname = "Higher CPU Speed"
+                dbname = user['pc']['cpu']
+                dbvalue = dbname + 1
+                print(price)
+                print("4")
+            if id == 5:
+                price = 600
+                itemname = "Higher GPU Speed"
+                dbname = user['pc']['gpu']
+                dbvalue = dbname + 1
+                print("5")
+            if id == 6:
+                print("six")
+                price = 500
+                itemname = "Higher RAM capacity"
+                itemdoc = {'user_id': str(ctx.author.id)}
+                value = user['pc']['ram']
+                newdoc = { '$set': {'pc': pc, 'ram': value + 1}}
+                print("Updating new Doc")
+                users_col.update_one(itemdoc, newdoc)
+                print("YEET")
+                print("6")
+            print("Next")
+            old_doc = {'user_id': str(ctx.author.id)}
+            print("got old doc")
+            new_money = user['balance'] - price
+            new_doc = { '$set': {'balance': new_money}}
+            print("Got new doc")
+            users_col.update_one(old_doc, new_doc)
+            print("Took Money Away")
+            await ctx.author.send("`You have just purchased `" + itemname + " for " + price + "<:coin:592831769024397332>!")
+            if id == 1:
+                twelvehourtimer(user, member, ctx)
+            return
+        elif msg.content == "N" or "n":
+            print("N")
+            return
 
+async def twelvehourtimer(member, ctx):
+    query = {'user_id': str(ctx.author.id)}
+    old_doc = users_col.find_one(query)
+    old_doc['network']['firewall'] = False
+    new_doc = { '$set': { 'network': old_doc['network']}}
+    await asyncio.sleep(43200)
+    users_col.update_one(query, new_doc)
+    await member.send("`WARNING: Your 12 hour firewall has been disabled!`")
+    return
 
 #System
 @bot.group(aliases=['sys', 'stats'])
