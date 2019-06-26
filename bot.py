@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.1.8.5a"
+version = "2019.1.8.7a"
 
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1}
@@ -136,7 +136,7 @@ async def login(ctx):
         )
         await ctx.author.send(embed=embed)
         an_ip = str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255))
-        user = {'user_id': str(ctx.author.id), 'pc': basic_pc_stats, 'network': basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC."}
+        user = {'user_id': str(ctx.author.id), 'pc': basic_pc_stats, 'network': basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False}
         print('inserting...')
         users_col.insert_one(user)
         print('created user')
@@ -390,33 +390,37 @@ def randomNumber():
 #Does 5 things, 1) Prompts user(Host) with a math question if they are online(Discord)2)Steals mOney if math is not awnsered or bruhed3)Take 1/4th of $$$, 5)Shut off (Host) PC
 @bot.command()
 async def breach(ctx):
-    if ctx.guild != None:
-        await ctx.message.delete()
     user = users_col.find_one({'user_id': str(ctx.author.id)})
-    if user == None:
-        await ctx.author.send("`Please type >login to start your adventure!`")
-        return
-    if user['online'] == False:
-        await ctx.author.send("`Your computer is not online. Please >login`")
-        return
-    if str(ctx.author.id) not in cache:
-        await ctx.author.send("`SocketError: Not connected to Network`")
-        return
-    if cache[str(ctx.author.id)]['type'] != 1:
-        await ctx.author.send("`Error: Server refused packets`")
-        return
+    if user['breach'] != True:
+        if ctx.guild != None:
+            await ctx.message.delete()
+        if user == None:
+            await ctx.author.send("`Please type >login to start your adventure!`")
+            return
+        if user['online'] == False:
+            await ctx.author.send("`Your computer is not online. Please >login`")
+            return
+        if str(ctx.author.id) not in cache:
+            await ctx.author.send("`SocketError: Not connected to Network`")
+            return
+        if cache[str(ctx.author.id)]['type'] != 1:
+            await ctx.author.send("`Error: Server refused packets`")
+            return
+        #check for cooldown
 
-
-    host_doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
-    if host_doc != None:
-        host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
-        if host_member != None:
-            breacher = ctx.author
-            await breach_host(host_member, host_doc, ctx, user, breacher)
+        host_doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
+        if host_doc != None:
+            host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
+            if host_member != None:
+                breacher = ctx.author
+                await ctx.author.send("`BREACH: A breach attack has been started... Waiting for Host's Reply..`")
+                await breach_host(host_member, host_doc, ctx, user, breacher)
+            else:
+                await ctx.author.send("`Error: unknown error in getting user`")
         else:
-            await ctx.author.send("`Error: unknown error in getting user`")
+            await ctx.author.send("`Error: unknown error in getting document`")
     else:
-        await ctx.author.send("`Error: unknown error in getting document`")
+        await ctx.author.send("`INFO: Your Breach Cooldown is still in effect.`")
 
 
 # the functiuons nthat we may or may not use
@@ -462,10 +466,81 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
             break
     if bypassed == True:
         await breach_starter(host_member, host_doc, ctx, user, breacher)
+
+
     if bypassed == False:
         await host_member.send("`DEFENSE FAILED: (You did not answer the math problem in time, your computer is compromized.)`")
-        await breacher.send("`BREACH SUCCESFUL: (You have compromized the host's Computer)`")
+        await breacher.send("`BREACH SUCCESFUL: (You have compromized the host's Computer, 1/4th of their funds will be moved into your account.)`")
+        hacker = users_col.find_one({'user_id': str(breacher.id)})#Gets Hackers Document
+        victim = users_col.find_one({'user_id': str(host_member.id)})#Gets Victims Document
+        victims_funds = victim['balance']#Gets current balance
+        ammount_toTake = int(victims_funds) * .25 #gets 1/4th
 
+        #Transfers Money
+        victims_oldfunds = {'user_id': str(host_member.id)}
+        victims_newFunds = { '$set': {'balance': int(victim['balance']) - ammount_toTake}}
+        newvictim = users_col.update_one(victims_oldfunds, victims_newFunds)
+        hackers_oldfunds = {'user_id': str(breacher.id)}
+        hackers_newFunds = { '$set': {'balance': int(hacker['balance']) + ammount_toTake}}
+        newhacker = users_col.update_one(hacker, hackers_newFunds)
+        await host_member.send("`BREACH: "+str(ammount_toTake)+"`<:coin:592831769024397332>` has been taken from your account` ")
+        #redoes logout to stop more hacking to 1 user
+
+
+        doc = victim
+        if doc != None:
+            if doc['online'] == True:
+                await host_member.send("**`Emergency shutdown iniciated...`**")
+                await host_member.send("`Saving session...`")
+                their_doc = {'user_id': str(host_member.id)}
+                insert_doc = { '$set': {'online': False} }
+                new_doc = users_col.update_one(their_doc, insert_doc)
+                await host_member.send("`Copying shared history...\nSaving history...truncating history files...`")
+                await host_member.send("`Completed\nDeleting expired sessions... 1 Completed`")
+
+                #if our buddy is connected to anyone
+                if str(host_member.id) in cache.keys():
+                    #grab his connection from cache
+                    outgoing = cache[str(host_member.id)]
+                    #if the type is to another PC
+                    if outgoing['type'] == 1:
+                        #grab the profile of the person our buddy is connected to
+                        host_doc = users_col.find_one({'ip':outgoing['host']})
+                        if host_doc != None:
+                            #grab the member object of the person our buddy is connected to
+                            host_user = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
+                            if host_user != None:
+                                #check to make sure that our buddy isn't connected to himself
+                                if host_user.id != host_member.id:
+                                    #send dc message to person, and remove connection from cache
+                                    await host_user.send("`LOG: user "+ str(host_member) + " ("+doc['ip']+") has disconnected from your network.`")
+                                    del cache[str(host_member.id)]
+
+                #get a list of connections to our buddy typing >logout
+                connections = get_all_connections_to(doc['ip'])
+                for connection in connections:
+                    print(str(connection))
+                    #send dc msg to each person connected to our buddy
+                    await connection.send("`LOG: Lost connection to "+doc['ip']+"`")
+                    #remove each connection from our buddy
+                    del cache[str(connection.id)]
+
+                await host_member.send("`Saving balance... " + str(victim['balance'] - ammount_toTake) + "`<:coin:592831769024397332>")
+                await host_member.send("[process completed]")
+                print(str(host_member.id) + " is now offline")
+            else:
+                await host_member.send("`Your computer is not online. Please >login`")
+        else:
+            await host_member.send("`Please type >login to start your adventure!`")
+
+
+        await breacher.send("`INFO: A Cooldown for Breaching has been set on your account for 10 minutes.`")
+        hackercooldownadd = { '$set': {'breach': True}}
+        givecooldown = users_col.update_one(hackers_oldfunds, hackercooldownadd)
+        await asyncio.sleep(600)
+        await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
+        hackercooldownrem = { '$set': {'breach': False}}
+        removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
 
 
 #Edit connection message
