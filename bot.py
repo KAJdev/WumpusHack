@@ -87,6 +87,14 @@ async def on_member_update(before, after):
                     print(str(after) + " woke up")
 
 
+@bot.command()
+async def ping(ctx):
+    embed=embed = discord.Embed(
+        title = '🏓 PONG 🏓',
+        description = "{0} ms".format(round(bot.latency * 1000, 1)),
+        color = 0x7289da
+    )
+    await ctx.send(embed=embed)
 
 #On ready
 @bot.event
