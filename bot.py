@@ -74,6 +74,8 @@ async def on_member_update(before, after):
                 doc = users_col.find_one({'user_id': str(after.id)})
                 if doc != None:
                     difference = doc['balance'] - cache['away'][str(after.id)]
+                    if difference < 26:
+                        return
                     del cache['away'][str(after.id)]
                     embed = discord.Embed(
                         title = "Report",
@@ -89,7 +91,7 @@ async def on_member_update(before, after):
 #On ready
 @bot.event
 async def on_ready():
-    await bot.user.edit(username="WumpusOS Terminal v"+version)
+    await bot.user.edit(username="WumpOS Terminal v"+version)
     print("caching users... ")
     for member in bot.get_all_members():
         if str(member.status) == 'offline':
@@ -702,7 +704,7 @@ async def breach_starter(host_member, host_doc, ctx, user, breacher):
     math_problem = randomNumber()
     answer = round(math.sqrt(math_problem))
     print(answer)
-    time_ = calc_time(user, 4)
+    time_ = calc_time(user, 1.5)
     await breacher.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". You have %s seconds. or the breach fails`" % (str(time_)))
     while True:
         try:
@@ -742,7 +744,7 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
     math_problem = randomNumber()
     answer = round(math.sqrt(math_problem))
     print(answer)
-    time_ = calc_time(host_doc, 4)
+    time_ = calc_time(host_doc, 1.5)
     await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". You have %s seconds. or your system is compromized`" % (str(time_)))
     while True:
         try:
