@@ -15,7 +15,7 @@ cache = {'away': {}}
 version = "2019.2.0.5b"
 
 #Defaults
-basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1}
+basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1, 'cpu_name': "Intel Atom", 'gpu_name': "Integrated Graphics"}
 basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
 game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov']
 
@@ -585,10 +585,11 @@ async def purchase(ctx, *, id:str=None):
                 # check for enough cash
                 if user['balance'] >= item['cost']:
                     # create a new PC dict
-                    new_pc = {'cpu': user['pc']['cpu'], 'ram': user['pc']['ram'], 'gpu': user['pc']['gpu']}
+                    new_pc = {'cpu': user['pc']['cpu'], 'ram': user['pc']['ram'], 'gpu': user['pc']['gpu'], 'gpu_name': user['pc']['gpu_name'], 'cpu_name': user['pc']['cpu_name']}
 
                     #replace the items modifying type with what the user bought
                     new_pc[item['type']] = item['system']
+                    new_pc[item['type']+'_name'] = item['name']
 
                     # pdate the document in the database
                     users_col.update_one({'user_id': str(ctx.author.id)}, {'$set':{'balance': user['balance'] - item['cost'], 'pc': new_pc}})
@@ -637,7 +638,7 @@ async def system(ctx):
 
         else:
             try:
-                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ " GB (used for programs)\n **CPU** - "+str(doc['pc']['cpu'])+" GHz (used for cracking)\n **GPU** - "+str(doc['pc']['gpu'])+" GHz (used for datamining)\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps (how fast things load)\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+" (protection against attacks)\n **Firewall** - "+str(doc['network']['firewall'])+" (protects against connections without a port)\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ " GB\n **CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n **GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n **Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
                 if str(ctx.author.id) in cache.keys():
                     sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
