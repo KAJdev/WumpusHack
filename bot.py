@@ -1,8 +1,11 @@
 #Imports
 print('Importing Libraries')
-import discord, pymongo, config, asyncio, random, dns, json, math
+import discord, pymongo, config, asyncio, random, dns, json, math, time
 from discord.ext import commands
 from datetime import datetime
+from pytrivia import Category, Diffculty, Type, Trivia
+
+Trivia = Trivia(True)
 
 #Prefix
 print('Making Bot')
@@ -12,12 +15,17 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.2.0.5b"
+version = "2019.2.0.14b"
 
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1, 'cpu_name': "Intel Atom", 'gpu_name': "Integrated Graphics"}
 basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
 game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov']
+
+#categories
+categories = [Category.Maths, Category.Computers]
+#difficulties
+difficulties = [Diffculty.Easy, Diffculty.Medium, Diffculty.Hard]
 
 owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
 help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disonnect** - Disconnects from another PC.\n**system editcm <msg>** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - buy and upgrade your pc!\n**help.gov** - this network.\n**mail.gov** - see your inbox, and send messages."
@@ -58,6 +66,62 @@ def get_all_connections_to(host):
                 if mem != None:
                     connections.append(mem)
     return connections
+
+#checks on firewall timer
+async def check_timer_firewall():
+    #get all documents from db
+    docs = users_col.find({})
+    right_now = time.time()
+    updated_docs = 0
+    for doc in docs:
+        # check if firewall timer isnt over (False == no timer)
+        if doc['network']['firewall'] != False:
+            updated_docs += 1
+            expire = float(doc['network']['firewall'])
+
+            # if the firewall time (timestamp) is less than right now
+            if expire <= time.time():
+                #set network to be false, so it is not check against
+                doc['network']['firewall'] = False
+                # update document is DB
+                users_col.update_one({'user_id': doc['user_id']}, {'$set':{'network': doc['network']}})
+
+                #get user and send message
+                member = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
+                if member != None:
+                    await member.send("`LOG: Firewall has been disabled. ports are now unportected.`")
+
+
+    difference = time.time() - right_now
+    print("updated %s firewall cooldown docs in %s seconds" % (str(updated_docs), str(round(difference, 1))))
+
+
+
+#checks on breach cooldown timer
+async def check_timer_breach_cooldown():
+    #get all documents from db
+    docs = users_col.find({})
+    right_now = time.time()
+    updated_docs = 0
+    for doc in docs:
+        # check if breach timer isnt over (False == no timer)
+        if doc['breach'] != False:
+            updated_docs += 1
+            expire = float(doc['network']['firewall'])
+
+            # if the breach cooldown time (timestamp) is less than right now
+            if expire <= time.time():
+                #set network to be false, so it is not check against and update document is DB
+                users_col.update_one({'user_id': doc['user_id']}, {'$set':{'breach': False}})
+
+                #get user and send message
+                member = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
+                if member != None:
+                    await member.send("`LOG: Breach cooldown disabled.`")
+
+
+    difference = time.time() - right_now
+    print("updated %s breach cooldown docs in %s seconds" % (str(updated_docs), str(round(difference, 1))))
 
 @bot.event
 async def on_member_update(before, after):
@@ -100,6 +164,8 @@ async def ping(ctx):
 @bot.event
 async def on_ready():
     await bot.user.edit(username="WumpOS Terminal v"+version)
+    if bot != None:
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="Bot starting..."))
     print("caching users... ")
     for member in bot.get_all_members():
         if str(member.status) == 'offline':
@@ -117,34 +183,62 @@ async def on_guild_join(guild):
     await guild.me.edit(nick="WumpusHack")
     print("WumpusHack Joined "+ str(guild))
 
+def mine():
+    docs = users_col.find({})
+    updated_count = 0
+    for doc in docs:
+        if doc['online'] == False:
+            continue
+        new_doc = { '$set': {'balance': doc['balance'] + doc['pc']['gpu']}}
+        users_col.update_one(doc, new_doc)
+
+    print("Tick. Updated %s users." % (docs.count()))
+
+
 async def tick():
     await asyncio.sleep(5)
     while not bot.is_closed():
         if bot != None:
             await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=">login | %s users online" % (users_col.find({'online': True}).count())))
         await asyncio.sleep(10)
-        docs = users_col.find({})
-        updated_count = 0
-        for doc in docs:
-            if doc['online'] == False:
-                continue
-            new_doc = { '$set': {'balance': doc['balance'] + doc['pc']['gpu']}}
-            users_col.update_one(doc, new_doc)
-            updated_count += 1
+        mine()
+        await check_timer_firewall()
+        await check_timer_breach_cooldown()
 
-        print("Tick. Updated %s users." % (updated_count))
+
 
 def calc_loading(doc, base):
-    load_time = base / ((doc['network']['bandwidth'] * doc['pc']['cpu']) + 1)
-    return load_time
+    specs = (doc['pc']['cpu'] + doc['pc']['ram'] + doc['network']['bandwidth'])
+    if specs > 30:
+        return 1
+    if specs > 20 and specs < 30:
+        return 3
+    if specs > 10 and specs < 20:
+        return 5
+    if specs > 0 and specs < 10:
+        return 8
 
 def calc_time(doc, base):
+    specs = (doc['pc']['cpu'] + doc['pc']['ram'] + doc['pc']['gpu'])
     if doc['network']['ddos_pro'] == True:
-        load_time = (doc['pc']['cpu'] + doc['network']['bandwidth']) * 15
-        return load_time
-    else:
-        load_time = (doc['pc']['cpu'] + doc['network']['bandwidth']) * 10
-        return load_time
+        if specs >= 25:
+            return 35
+        if specs < 25 and specs > 15:
+            return 30
+        if specs < 15 and specs > 3:
+            return 20
+        if specs < 5 and specs > 3:
+            return 15
+    if doc['network']['ddos_pro'] == False:
+        if specs >= 25:
+            return 30
+        if specs < 25 and specs > 15:
+            return 25
+        if specs < 15 and specs > 3:
+            return 15
+        if specs < 5 and specs > 3:
+            return 10
+
 
 #Login
 @bot.command()
@@ -189,7 +283,7 @@ async def logout(ctx):
         if doc['online'] == True:
             if str(ctx.author.id) in cache.keys():
                 if cache[str(ctx.author.id)]['type'] == 4:
-                    await ctx.author.send("`PermissionError: Invalid permissions for this action`")
+                    await ctx.author.send("<:bad:593862973274062883> `PermissionError: Invalid permissions for this action`")
                     return
 
             await ctx.author.send("`Saving session...`")
@@ -247,13 +341,13 @@ async def connect(ctx, ip : str = None):
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
     if ip == None:
-        await ctx.author.send("`error in command \'connect\'. An Internet Protocol Address must be provided.`")
+        await ctx.author.send("<:bad:593862973274062883> `error in command \'connect\'. An Internet Protocol Address must be provided.`")
         return
     if str(ctx.author.id) in cache.keys():
-        await ctx.author.send("`PortBindError: Port already in use. Use >disconnect to free up a port.`")
+        await ctx.author.send("<:bad:593862973274062883> `PortBindError: Port already in use. Use >disconnect to free up a port.`")
         return
     if user['ip'] == ip:
-        await ctx.author.send("`PortBindError: Port already in use. Cannot connect to localhost:21.`")
+        await ctx.author.send("<:bad:593862973274062883> `PortBindError: Port already in use. Cannot connect to localhost:21.`")
         return
     else:
         msg = await ctx.author.send("<a:loading2:592819419604975797> `Connecting to %s`" % (ip))
@@ -267,7 +361,7 @@ async def connect(ctx, ip : str = None):
                 cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                 return
             if ip == 'store.gov':
-                shop_string = "Welcome to the shop! Here you can buy PC upgrades, and more!\nThe stock changes every day, so make sure to come back tomorrow!\nYour balance - %s <:coin:592831769024397332>\n\n" % (user['balance'])
+                shop_string = "Welcome to the shop! Here you can buy PC upgrades, and more!\nThe stock changes every day, so make sure to come back tomorrow!\nYour balance - %s <:coin:592831769024397332>\n\n**Firewall**\nA temporary way to prevent connections and scans.\ncost: 10000 <:coin:592831769024397332> per hour\n`>purchase firewall`\n\n" % (user['balance'])
                 random.seed(get_day_of_year())
                 items = random.sample(shop_items, 5)
                 for item in items:
@@ -310,8 +404,17 @@ async def connect(ctx, ip : str = None):
                 return
         doc = users_col.find_one({'ip': ip})
         if doc != None:
+            test_member = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
+            if test_member == None:
+                await msg.edit(content="<:bad:593862973274062883> `TimeoutError: Server did not respond.`")
+                return
+
             if doc['online'] == False:
                 await msg.edit(content="<:done:592819995843624961> `TimeoutError: Server did not respond.`")
+                return
+            elif doc['network']['firewall'] != False:
+                await msg.edit(content="<:done:592819995843624961> `PacketRefusal: packets have been blocked by firewall.`")
+                return
             else:
                 await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s:`" % (ip))
                 await ctx.author.send("```" + doc['connect_msg'] + "```")
@@ -324,7 +427,7 @@ async def connect(ctx, ip : str = None):
                 except Exception as e:
                     print(e)
         else:
-            await msg.edit(content="<:done:592819995843624961> `TimeoutError: Server did not respond.`")
+            await msg.edit(content="<:bad:593862973274062883> `TimeoutError: Server did not respond.`")
 
 @bot.command(aliases=['dc'])
 async def disconnect(ctx):
@@ -334,7 +437,7 @@ async def disconnect(ctx):
         return
     elif str(ctx.author.id) in cache.keys():
         if cache[str(ctx.author.id)]['type'] == 4:
-            await ctx.author.send("`PermissionError: Invalid permissions for this action`")
+            await ctx.author.send("<:bad:593862973274062883> `PermissionError: Invalid permissions for this action`")
             return
 
         await ctx.author.send("<:done:592819995843624961> `Disconnected from host %s`" % (cache[str(ctx.author.id)]['host']))
@@ -349,7 +452,7 @@ async def disconnect(ctx):
         del cache[str(ctx.author.id)]
         return
     else:
-        await ctx.author.send("`SocketError: Not connected to any network.`")
+        await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to any network.`")
         return
 
 @bot.command(aliases=['scrape'])
@@ -362,7 +465,7 @@ async def scan(ctx):
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
     if str(ctx.author.id) in cache.keys():
-        await ctx.author.send("`PortBindError: Port already in use. Use >disconnect to free up a port.`")
+        await ctx.author.send("<:bad:593862973274062883> `PortBindError: Port already in use. Use >disconnect to free up a port.`")
         return
 
     time_ = calc_loading(user, 600)
@@ -380,8 +483,8 @@ async def scan(ctx):
     all_docs = users_col.find({})
     doc = None
     while True:
-        count = users_col.count()
-        doc = users_col.find()[random.randrange(count)]
+        doc = users_col.find({'online': True})
+        doc = doc[random.randrange(doc.count()) - 1]
         if doc['user_id'] == user['user_id']:
             continue
         else:
@@ -415,7 +518,7 @@ async def inbox(ctx):
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
     elif str(ctx.author.id) not in cache:
-        await ctx.author.send("`SocketError: Not connected to Network`")
+        await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to Network`")
         return
     else:
         #send inbox
@@ -460,7 +563,7 @@ async def clear(ctx):
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
     elif str(ctx.author.id) not in cache:
-        await ctx.author.send("`SocketError: Not connected to Network`")
+        await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to Network`")
         return
     else:
         await ctx.author.send("`LOG: (mail.gov) Are you sure you want toclear your inbox? Respond with `Y` or `N")
@@ -521,7 +624,7 @@ async def send(ctx, mail_to:str=None, *, msg:str=None):
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
     if str(ctx.author.id) not in cache:
-        await ctx.author.send("`SocketError: Not connected to Network`")
+        await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to Network`")
         return
     elif mail_to == None:
         await ctx.author.send("`LOG: (mail.gov) Please specify an email to send to`")
@@ -569,10 +672,10 @@ async def purchase(ctx, *, id:str=None):
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
     if str(ctx.author.id) not in cache:
-        await ctx.author.send("`SocketError: Not connected to Network`")
+        await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to Network`")
         return
     elif id == None:
-        await ctx.author.send("`ERROR: Please specify an ID to purchase`")
+        await ctx.author.send("`LOG: (store.gov) Please specify an ID to purchase`")
         return
 
     # check to see if the Item they specified is in today's list of items
@@ -592,7 +695,7 @@ async def purchase(ctx, *, id:str=None):
         #start loop
         while True:
             msg = await bot.wait_for('message')
-            if msg.content.lower() == "y" and msg.author.id == ctx.author.id:
+            if msg.content.lower() == "y" and msg.author.id == ctx.author.id and msg.channel.id == ctx.channel.id:
                 # check for enough cash
                 if user['balance'] >= item['cost']:
                     # create a new PC dict
@@ -606,7 +709,7 @@ async def purchase(ctx, *, id:str=None):
                     users_col.update_one({'user_id': str(ctx.author.id)}, {'$set':{'balance': user['balance'] - item['cost'], 'pc': new_pc}})
 
                     #send confirmation message
-                    await ctx.author.send("`LOG: (store.gov) You have just purchased `" + id + " for " + str(item['cost']) + "<:coin:592831769024397332>!")
+                    await ctx.author.send("`LOG: (store.gov) You have just purchased `" + id + "` for " + str(item['cost']) + "<:coin:592831769024397332>!")
                     return
                 else:
                     await ctx.author.send("`LOG: (store.gov) Insufficient balance.`")
@@ -618,18 +721,45 @@ async def purchase(ctx, *, id:str=None):
             else:
                 continue
     else:
-        await ctx.author.send("`LOG: (store.gov) Not a valid ID.`")
-        return
+        if id == 'firewall':
+            await ctx.author.send("`LOG: (store.gov) Are you sure you want to purchase this item? Respond with `Y` or `N")
 
-async def twelvehourtimer(member, ctx):
-    query = {'user_id': str(ctx.author.id)}
-    old_doc = users_col.find_one(query)
-    old_doc['network']['firewall'] = False
-    new_doc = { '$set': { 'network': old_doc['network']}}
-    await asyncio.sleep(43200)
-    users_col.update_one(query, new_doc)
-    await member.send("`WARNING: Your 12 hour firewall has been disabled!`")
-    return
+            #start loop
+            while True:
+                msg = await bot.wait_for('message')
+                if msg.content.lower() == "y" and msg.author.id == ctx.author.id and msg.channel.id == ctx.channel.id:
+                    # check for enough cash
+                    if user['balance'] >= 10000:
+
+                        # create a new NET dict
+                        new_network = user['network']
+
+                        #check if there is already a timer started, if so, add one hour to existing timer.
+                        if new_network['firewall'] != False:
+                            new_network['firewall'] = int(new_network['firewall']) + 3600
+
+                        else:
+                            #otherwise, just add a timer oh 1 hour.
+                            new_network['firewall'] = str(time.time() + 3600)
+
+                        #update dict in databse with timer set to one hour in the future
+                        users_col.update_one({'user_id': str(ctx.author.id)}, {'$set': {'network': new_network, 'balance': user['balance'] - 10000}})
+
+                        #send confirmation message
+                        await ctx.author.send("`LOG: (store.gov) You have just purchased `one hour of Firewall protection` for 10000 <:coin:592831769024397332>!")
+                        return
+                    else:
+                        await ctx.author.send("`LOG: (store.gov) Insufficient balance.`")
+                        return
+
+                elif msg.content.lower() == 'n' and msg.author.id == ctx.author.id:
+                    await ctx.author.send("`LOG: (store.gov) Purchase canceled.`")
+                    break
+                else:
+                    continue
+        else:
+            await ctx.author.send("`LOG: (store.gov) Not a valid ID.`")
+            return
 
 #System
 @bot.group(aliases=['sys', 'stats'])
@@ -648,19 +778,20 @@ async def system(ctx):
             return
 
         else:
-            try:
-                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ " GB\n **CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n **GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n **Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+            if doc['network']['firewall'] != False:
+                firewall_time = round(float(doc['network']['firewall'])  - time.time())
+                doc['network']['firewall'] = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(firewall_time))
 
-                if str(ctx.author.id) in cache.keys():
-                    sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
+            sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ " GB\n **CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n **GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n **Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
-                embed = discord.Embed(
-                    title = "System Information",
-                    description = sys_string,
-                    color = 0x7289da
-                )
-            except Exception as e:
-                print(e)
+            if str(ctx.author.id) in cache.keys():
+                sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
+
+            embed = discord.Embed(
+                title = "System Information",
+                description = sys_string,
+                color = 0x7289da
+            )
             msg = await ctx.author.send("<a:loading2:592819419604975797> `Obtaining system information...`")
             await asyncio.sleep(calc_loading(doc, 5))
             await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
@@ -684,10 +815,13 @@ async def breach(ctx):
             await ctx.author.send("`Your computer is not online. Please >login`")
             return
         if str(ctx.author.id) not in cache:
-            await ctx.author.send("`SocketError: Not connected to Network`")
+            await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to Network`")
             return
         if cache[str(ctx.author.id)]['type'] != 1:
-            await ctx.author.send("`Error: Server refused packets`")
+            await ctx.author.send("<:bad:593862973274062883> `Error: Server refused packets`")
+            return
+        if cache[str(ctx.author.id)]['type'] == 3:
+            await ctx.author.send("<:bad:593862973274062883> `Error: Port already open.`")
             return
         #check for cooldown
 
@@ -695,36 +829,68 @@ async def breach(ctx):
         if host_doc != None:
             host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
             if host_member != None:
-                cache[str(host_member.id)] = {'status': False, 'type': 4, 'host': "Breachign system"}
+                cache[str(host_member.id)] = {'status': False, 'type': 3, 'host': "**BREACH**"}
                 breacher = ctx.author
+                hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
+                givecooldown = users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)
                 await ctx.author.send("`BREACH: A breach attack has been started... Sent initiation packets, awaiting host.`")
                 await breach_host(host_member, host_doc, ctx, user, breacher)
             else:
-                await ctx.author.send("`Error: unknown error in getting user`")
+                await ctx.author.send("<:bad:593862973274062883> `Error: unknown error in getting user`")
         else:
-            await ctx.author.send("`Error: unknown error in getting document`")
+            await ctx.author.send("<:bad:593862973274062883> `Error: unknown error in getting document`")
     else:
-        await ctx.author.send("`INFO: Your Breach Cooldown is still in effect.`")
+        await ctx.author.send("<:bad:593862973274062883> `INFO: Your Breach Cooldown is still in effect.`")
 
 
-# the functiuons nthat we may or may not use
+def get_random_q_a():
+    cat = categories[random.randint(0, len(categories) - 1)]
+    dif = difficulties[random.randint(0, len(difficulties) - 1)]
+    tr = Trivia.request(1, cat, dif, Type.Multiple_Choice)
+    #error handle
+    if tr['response_code'] != 0:
+        print("API error in getting question")
+        answer = 4
+        question = "What is 2 + 2"
+        all_a = "4, 3, 6, 8"
+        catstring = "Math"
+
+    else:
+        #regular day
+        answer = tr['results'][0]['correct_answer']
+        question = tr['results'][0]['question']
+        all_a = ""
+        catstring = str(tr['results'][0]['category'])
+        # take all valid responses, and randomise order, and turn into one string.
+        tr['results'][0]['incorrect_answers'].append(answer)
+        random.shuffle(tr['results'][0]['incorrect_answers'])
+        print(tr)
+        for a in tr['results'][0]['incorrect_answers']:
+            all_a = all_a + str(a)
+
+    #always give question and answer
+    return question, answer, all_a, catstring
+
+# the functiuons nthat we may or may not use (Spoiler alert we do)
 async def breach_starter(host_member, host_doc, ctx, user, breacher):
     bypassed = False
-    math_problem = randomNumber()
-    answer = round(math.sqrt(math_problem))
+    catstring, all_a, question, answer = get_random_q_a()
     print(answer)
     time_ = calc_time(user, 1.5)
-    await breacher.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". You have %s seconds. or the breach fails`" % (str(time_)))
-    while True:
+    await breacher.send("`RETALIATION: ("+host_doc['ip']+") "+" Category:\n"+catstring+"\n"+str(question)+"\nYour Choices:\n"+ str(all_a)+ "\n You have %s seconds, or the breach fails`" % (str(time_)))
+    correct = False #Does Trivia Stuff
+    while correct == False:
         try:
             msg = await bot.wait_for('message', timeout=time_)
-            if  msg.author.id == breacher.id:
-                if msg.content == str(answer):
+            if  msg.author.id == breacher.id and msg.channel.id == ctx.channel.id:
+                if msg.content.lower() == str(answer).lower():
                     await breacher.send("`BREACH: Correct, retaliation sent.`")
+                    correct = True
                     bypassed = True
                     break
                 else:
-                    await breacher.send("`BREACH: Error, incorrect. re-submit answer.`")
+                    await breacher.send("<:bad:593862973274062883>`BREACH: Error, incorrect. re-submit answer.`")
+                    correct = False
             else:
                 continue
         except:
@@ -740,31 +906,32 @@ async def breach_starter(host_member, host_doc, ctx, user, breacher):
         await breacher.send("`INFO: A Cooldown for Breaching has been set on your account for 10 minutes.`")
         await host_member.send("`LOG: %s has been disconnected.`" % (user['ip']))
         await breacher.send("`LOG: %s has disconnected you from their network.`" % (host_doc['ip']))
-        hackercooldownadd = { '$set': {'breach': True}}
-        givecooldown = users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)
-        await asyncio.sleep(600)
-        await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
-        hackercooldownrem = { '$set': {'breach': False}}
-        removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
+        hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
+        givecooldown = users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)#
+        #await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
+        #hackercooldownrem = { '$set': {'breach': False}}
+        #removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
 
 
 async def breach_host(host_member, host_doc, ctx, user, breacher):
     bypassed = False
-    math_problem = randomNumber()
-    answer = round(math.sqrt(math_problem))
+    catstring, all_a, question, answer = get_random_q_a()
     print(answer)
-    time_ = calc_time(host_doc, 1.5)
-    await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". You have %s seconds. or your system is compromized`" % (str(time_)))
-    while True:
+    time_ = calc_time(user, 1.5)
+    await breacher.send("`BREACH: ("+host_doc['ip']+") "+" Category:\n"+catstring+"\n"+str(question)+"\nYour Choices:\n"+ str(all_a)+ "\n You have %s seconds, or 1/4th of your Funds are taken.`" % (str(time_)))
+    correct = False #Does Trivia Stuff
+    while correct == False:
         try:
             msg = await bot.wait_for('message', timeout=time_)
-            if  msg.author.id == host_member.id:
-                if msg.content == str(answer):
+            if  msg.author.id == host_member.id and msg.channel.id == ctx.channel.id:
+                if msg.content.lower() == str(answer).lower():
                     bypassed = True
                     await host_member.send("`BREACH: Correct, retaliation sent.`")
+                    correct = True
                     break
                 else:
-                    await host_member.send("`BREACH: Error, incorrect. re-submit answer.`")
+                    await host_member.send("<:bad:593862973274062883> `BREACH: Error, incorrect. re-submit answer.`")
+                    correct = False
             else:
                 continue
         except:
@@ -826,19 +993,18 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
 
 
         await breacher.send("`INFO: A Cooldown for Breaching has been set on your account for 10 minutes.`")
-        hackercooldownadd = { '$set': {'breach': True}}
+        hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
         givecooldown = users_col.update_one(hackers_oldfunds, hackercooldownadd)
-        await asyncio.sleep(600)
-        await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
-        hackercooldownrem = { '$set': {'breach': False}}
-        removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
-
+        #await asyncio.sleep(600)
+        #await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
+        #hackercooldownrem = { '$set': {'breach': False}}
+        #removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
 
 #Edit connection message
 @system.command()
 async def editcm(ctx, *, message = None):
     if message == None:
-        await ctx.send("`You have not sent a replacement connection message!`")
+        await ctx.send("<:bad:593862973274062883> `LOG: error in command 'editcm', no message provided.`")
     else:
         user = users_col.find_one({'user_id': str(ctx.author.id)})
         if user == None:
@@ -849,7 +1015,7 @@ async def editcm(ctx, *, message = None):
             return
         else:
             users_col.update_one({'user_id': str(ctx.author.id)}, { '$set': {'connect_msg': message }})
-            await ctx.send("`Updated connection message: %s`" % (message))
+            await ctx.send("`LOG: Updated connection message: %s`" % (message))
 
 
 @bot.command(name='print', aliases=['log'])
@@ -864,7 +1030,7 @@ async def _print(ctx, *, msg:str=None):
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
     if msg == None:
-        await ctx.author.send("`error in command \'print\'. A message must be provided.`")
+        await ctx.author.send("<:bad:593862973274062883> `error in command \'print\'. A message must be provided.`")
         return
     if str(ctx.author.id) not in cache.keys():
         for key, value in cache.items():
@@ -952,7 +1118,7 @@ async def reset(ctx, user : discord.User = None):
                 await ctx.send("`"+str(user) + "'s systems have been re-imaged.`")
                 break
             elif "n" == msg.content.lower and msg.author.id == ctx.author.id:
-                await ctx.send("`Reset canceled.`")
+                await ctx.send("`LOG: Reset canceled.`")
                 break
             else:
                 continue
@@ -961,7 +1127,7 @@ async def reset(ctx, user : discord.User = None):
     except Exception as e:
         print(e)
         await message.delete()
-        await ctx.send("`No reply recived. Prompt expired.`")
+        await ctx.send("<:bad:593862973274062883> `No reply recived. Prompt expired.`")
         return
 
 
@@ -969,7 +1135,7 @@ async def reset(ctx, user : discord.User = None):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send('`"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
+        await ctx.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
     else:
         raise error
 
