@@ -12,18 +12,18 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.1.8.8a"
+version = "2019.2.0.5b"
 
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1}
 basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
-game_sites=['help.gov', 'store.gov', '0.0.0.1']
+game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov']
 
 owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
-help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disonnect** - Disconnects from another PC.\n**Editcm** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - Shows the store."
+help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disonnect** - Disconnects from another PC.\n**system editcm <msg>** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n\n**__Government websites__**\n**store.gov** - buy and upgrade your pc!\n**help.gov** - this network.\n**mail.gov** - see your inbox, and send messages."
 shop_string = "**__Network Upgrades__**\n**Firewall**\nCost - 50000 <:coin:592831769024397332>\n`Temporary 12 Hour Firewall blocking all connecions.`\n`ID - 1`\n\n**DDOS Protection**\nCost - 80000 <:coin:592831769024397332>\n`Adds extra time on math problems.`\n`ID - 2`\n\n**Bandwidth**\nCost - 1000 <:coin:592831769024397332>\n`Improves loading times and breach times.`\n`ID - 3`\n\n**__PC Upgrades__**\n**CPU**\nCost - 500 <:coin:592831769024397332>\n`Improves your CPU's Ghz by .5`\n`ID - 4`\n\n**GPU**\nCost - 600 <:coin:592831769024397332>\n`Improves your GPU's Ghz by .3`\n`ID - 5`\n\n**RAM**\nCost - 500 <:coin:592831769024397332>\n`Improves RAM by 1GB`\n`ID - 6`"
 
-shop_items = [{'name': "GTX 1060", 'type': 'gpu', 'system': 5, 'cost': 5000}, {'name': "AMD Athlon II X3", 'type': 'cpu', 'system': 2, 'cost': 1500}, {'name': "Intel core i3", 'type': 'cpu', 'system': 4, 'cost': 1500}, {'name': "4GB RAM Stick", 'type': 'ram', 'system': 4, 'cost': 4000}, {'name': "8GB RAM Stick", 'type': 'ram', 'system': 8, 'cost': 9000}, {'name': "16GB RAM Stick", 'type': 'ram', 'system': 16, 'cost': 20000}]
+shop_items = [{'name': "GTX 1060", 'type': 'gpu', 'system': 5, 'cost': 5000}, {'name': "AMD Athlon II X3", 'type': 'cpu', 'system': 2, 'cost': 1500}, {'name': "Intel core i3", 'type': "cpu", 'system': 4, 'cost': 1500}, {'name': "4GB RAM Stick", 'type': 'ram', 'system': 4, 'cost': 4000}, {'name': "8GB RAM Stick", 'type': 'ram', 'system': 8, 'cost': 9000}, {'name': "16GB RAM Stick", 'type': 'ram', 'system': 16, 'cost': 20000}, {'name': "Intel core i5", 'type': "cpu", 'system': 5, 'cost': 3500}, {'name': "Intel core i7", 'type': "cpu", 'system': 6, 'cost': 5000}, {'name': "Intel Xeon", 'type': "cpu", 'system': 9, 'cost': 20000}, {'name': "AMD Threadripper", 'type': "cpu", 'system': 9, 'cost': 19000}, {'name': "AMD Radeon RX 580", 'type': 'gpu', 'system': 6, 'cost': 14000}, {'name': "Nvidia GeForce GTX 1070", 'type': 'gpu', 'system': 7, 'cost': 17000}, {'name': "Nvidia GeForce RTX 2080 Ti", 'type': 'gpu', 'system': 10, 'cost': 25000}]
 
 #embed=discord.Embed(title="`system connection status`", description="`234.56.432.523 has started an attack on your system.`")
 #embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/591894598234800158/592847649481424896/Discord.png")
@@ -39,6 +39,7 @@ print('Connecting to MongoDB')
 myclient = pymongo.MongoClient(config.URI)
 wumpdb = myclient["wumpus-hack"]
 users_col = wumpdb['users']
+mail_col = wumpdb['mail']
 print("bot connected to database. users: " + str(users_col.count()))
 
 
@@ -252,7 +253,7 @@ async def connect(ctx, ip : str = None):
                 cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                 return
             if ip == 'store.gov':
-                shop_string = "Welcome to the shop! Here you can buy PC upgrades, and more!\nYour balance - %s <:coin:592831769024397332>\n\n" % (user['balance'])
+                shop_string = "Welcome to the shop! Here you can buy PC upgrades, and more!\nThe stock changes every day, so make sure to come back tomorrow!\nYour balance - %s <:coin:592831769024397332>\n\n" % (user['balance'])
                 random.seed(get_day_of_year())
                 items = random.sample(shop_items, 5)
                 for item in items:
@@ -261,6 +262,24 @@ async def connect(ctx, ip : str = None):
                 embed = discord.Embed(
                     title = "https://store.gov",
                     description = shop_string,
+                    color = 0x7289da
+                )
+                await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s:`" % (ip), embed=embed)
+                cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
+                return
+            if ip == 'mail.gov':
+                email = "%s@mail.gov" % (ctx.author.name)
+                mail_string = "Hi, this is mail.gov, Here you can see your inbox, and send messages. \nUse the `>send <email> <message>` command to send an email!\n\n**inbox for %s**\n```" % (email)
+                mails = mail_col.find({'to': email})
+                if mails.count() < 1:
+                    mail_string = mail_string + "\nYour inbox is empty :)\n"
+                else:
+                    for mail in mails:
+                        mail_string = mail_string + "To: " + mail['to'] +"\nFrom: " + mail['from'] + "\n" + mail['content'] +"\n\n"
+
+                embed = discord.Embed(
+                    title = "https://mail.gov",
+                    description = mail_string + "```\n\nuse `>clear` to clear your inbox of messages, and `>inbox` to show it again.",
                     color = 0x7289da
                 )
                 await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s:`" % (ip), embed=embed)
@@ -335,7 +354,7 @@ async def scan(ctx):
     time_ = calc_loading(user, 600)
     msg = await ctx.author.send("<a:loading2:592819419604975797> `scraping for IP addresses. (this will take around %s minutes)`" % round(time_ / 60))
 
-    cache[str(ctx.author.id)] = {'status': True, 'type': 3, 'host': None}
+    cache[str(ctx.author.id)] = {'status': True, 'type': 3, 'host': "using network card to scan for IPs"}
     await asyncio.sleep(time_)
     if str(ctx.author.id) not in cache.keys():
         return
@@ -357,6 +376,151 @@ async def scan(ctx):
     host_user = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
     if host_user != None:
         await host_user.send("`LOG: recived ping from host "+user['ip']+"`")
+
+
+
+@bot.command()
+async def inbox(ctx):
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    elif str(ctx.author.id) not in cache:
+        raise commands.CommandNotFound
+        return
+    elif cache[str(ctx.author.id)]['host'] != 'mail.gov':
+        raise commands.CommandNotFound
+        return
+
+    elif ctx.guild != None:
+        await ctx.message.delete()
+    elif user == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+    elif user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    elif str(ctx.author.id) not in cache:
+        await ctx.author.send("`SocketError: Not connected to Network`")
+        return
+    else:
+        #send inbox
+        email = "%s@mail.gov" % (ctx.author.name)
+        mail_string = "Hi, this is mail.gov, Here you can see your inbox, and send messages. \nUse the `>send <email> <message>` command to send an email!\n\n**inbox for %s**\n```" % (email)
+        mails = mail_col.find({'to': email})
+        if mails.count() < 1:
+            mail_string = mail_string + "\nYour inbox is empty :)\n"
+        else:
+            for mail in mails:
+                mail_string = mail_string + "To: " + mail['to'] +"\nFrom: " + mail['from'] + "\n" + mail['content'] +"\n\n"
+
+        embed = discord.Embed(
+            title = "https://mail.gov",
+            description = mail_string + "```\n\nuse `>clear` to clear your inbox of messages",
+            color = 0x7289da
+        )
+        await ctx.author.send(embed=embed)
+
+
+
+
+@bot.command()
+async def clear(ctx):
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    elif str(ctx.author.id) not in cache:
+        raise commands.CommandNotFound
+        return
+    elif cache[str(ctx.author.id)]['host'] != 'mail.gov':
+        raise commands.CommandNotFound
+        return
+
+    elif ctx.guild != None:
+        await ctx.message.delete()
+    elif user == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+    elif user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    elif str(ctx.author.id) not in cache:
+        await ctx.author.send("`SocketError: Not connected to Network`")
+        return
+    else:
+        await ctx.author.send("`LOG: (mail.gov) Are you sure you want toclear your inbox? Respond with `Y` or `N")
+        while True:
+            msg = await bot.wait_for('message')
+            if msg.content.lower() == "y" and msg.author.id == ctx.author.id:
+                mails = mail_col.find({'to': "%s@mail.gov" % (ctx.author.name)})
+                if mails.count() > 0:
+                    mail_col.delete_many({'to': "%s@mail.gov" % (ctx.author.name)})
+
+                    #send inbox again
+                    email = "%s@mail.gov" % (ctx.author.name)
+                    mail_string = "Hi, this is mail.gov, Here you can see your inbox, and send messages. \nUse the `>send <email> <message>` command to send an email!\n\n**inbox for %s**\n```" % (email)
+                    mails = mail_col.find({'to': email})
+                    if mails.count() < 1:
+                        mail_string = mail_string + "\nYour inbox is empty :)\n"
+                    else:
+                        for mail in mails:
+                            mail_string = mail_string + "To: " + mail['to'] +"\nFrom: " + mail['from'] + "\n" + mail['content'] +"\n\n"
+
+                    embed = discord.Embed(
+                        title = "https://mail.gov",
+                        description = mail_string + "```\n\nuse `>clear` to clear your inbox of messages",
+                        color = 0x7289da
+                    )
+                    await ctx.author.send("`LOG: (mail.gov) you have cleared your inbox!`", embed=embed)
+                    return
+                else:
+                    await ctx.author.send("`LOG: (mail.gov) You do not have any mail in your inbox.`")
+                    return
+
+            elif msg.content.lower() == 'n' and msg.author.id == ctx.author.id:
+                await ctx.author.send("`LOG: (mail.gov) purge canceled.`")
+                break
+            else:
+                continue
+
+
+@bot.command()
+async def send(ctx, mail_to:str=None, *, msg:str=None):
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    if str(ctx.author.id) not in cache:
+        raise commands.CommandNotFound
+        return
+    elif cache[str(ctx.author.id)]['host'] != 'mail.gov':
+        raise commands.CommandNotFound
+        return
+
+    if ctx.guild != None:
+        await ctx.message.delete()
+    if user == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    if str(ctx.author.id) not in cache:
+        await ctx.author.send("`SocketError: Not connected to Network`")
+        return
+    elif mail_to == None:
+        await ctx.author.send("`LOG: (mail.gov) Please specify an email to send to`")
+        return
+    elif msg == None:
+        await ctx.author.send("`LOG: (mail.gov) Please specify a message to send`")
+        return
+    else:
+        email = "%s@mail.gov" % (ctx.author.name)
+        mail_doc = {'to': mail_to, 'from': email, 'content': msg}
+        mail_col.insert_one(mail_doc)
+        await ctx.author.send("`LOG: (mail.gov) email has been sent.`")
+
 
 
 
@@ -466,7 +630,7 @@ async def system(ctx):
 
         else:
             try:
-                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ "GB (used for programs)\n **CPU** - "+str(doc['pc']['cpu'])+" GHz (used for cracking)\n **GPU** - "+str(doc['pc']['gpu'])+" GHz (used for datamining)\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps (how fast things load)\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+" (protection against attacks)\n **Firewall** - "+str(doc['network']['firewall'])+" (protects against connections without a port)\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+                sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ " GB (used for programs)\n **CPU** - "+str(doc['pc']['cpu'])+" GHz (used for cracking)\n **GPU** - "+str(doc['pc']['gpu'])+" GHz (used for datamining)\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps (how fast things load)\n**DDOS Protection** - "+str(doc['network']['ddos_pro'])+" (protection against attacks)\n **Firewall** - "+str(doc['network']['firewall'])+" (protects against connections without a port)\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
                 if str(ctx.author.id) in cache.keys():
                     sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
@@ -512,7 +676,7 @@ async def breach(ctx):
         if host_doc != None:
             host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
             if host_member != None:
-                cache[str(host_member.id)] = {'status': False, 'type': 4, 'host': None}
+                cache[str(host_member.id)] = {'status': False, 'type': 4, 'host': "Breachign system"}
                 breacher = ctx.author
                 await ctx.author.send("`BREACH: A breach attack has been started... Sent initiation packets, awaiting host.`")
                 await breach_host(host_member, host_doc, ctx, user, breacher)
@@ -528,18 +692,21 @@ async def breach(ctx):
 async def breach_starter(host_member, host_doc, ctx, user, breacher):
     bypassed = False
     math_problem = randomNumber()
-    answer = math.sqrt(math_problem)
+    answer = round(math.sqrt(math_problem))
+    print(answer)
     time_ = calc_time(user, 4)
     await breacher.send("`RETALIATION: ("+host_doc['ip']+") what is the square root of "+str(math_problem)+". You have %s seconds. or the breach fails`" % (str(time_)))
     while True:
         try:
             msg = await bot.wait_for('message', timeout=time_)
-            if msg.content == str(answer) and msg.author.id == breacher.id:
-                await breacher.send("`BREACH: Correct, retaliation sent.`")
-                bypassed = True
-                break
+            if  msg.author.id == breacher.id:
+                if msg.content == str(answer):
+                    await breacher.send("`BREACH: Correct, retaliation sent.`")
+                    bypassed = True
+                    break
+                else:
+                    await breacher.send("`BREACH: Error, incorrect. re-submit answer.`")
             else:
-                await breacher.send("`BREACH: Error, incorrect. re-submit answer.`")
                 continue
         except:
             bypassed = False
@@ -547,33 +714,39 @@ async def breach_starter(host_member, host_doc, ctx, user, breacher):
     if bypassed == True:
         await breach_host(host_member, host_doc, ctx, user, breacher)
     if bypassed == False:
+        del cache[str(breacher.id)]
+        del cache[str(host_member.id)]
         await breacher.send("`BREACH FAILED: (You did not answer the math problem in time, the breach has failed.)`")
         await host_member.send("`BREACH BLOCKED: (The breach has been stopped by your defenses)`")
         await breacher.send("`INFO: A Cooldown for Breaching has been set on your account for 10 minutes.`")
+        await host_member.send("`LOG: %s has been disconnected.`" % (user['ip']))
+        await breacher.send("`LOG: %s has disconnected you from their network.`" % (host_doc['ip']))
         hackercooldownadd = { '$set': {'breach': True}}
-        givecooldown = users_col.update_one(hackers_oldfunds, hackercooldownadd)
+        givecooldown = users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)
         await asyncio.sleep(600)
         await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
         hackercooldownrem = { '$set': {'breach': False}}
         removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
-        del cache[str(breacher.id)]
-        del cache[str(host_member.id)]
+
 
 async def breach_host(host_member, host_doc, ctx, user, breacher):
     bypassed = False
     math_problem = randomNumber()
-    answer = math.sqrt(math_problem)
+    answer = round(math.sqrt(math_problem))
+    print(answer)
     time_ = calc_time(host_doc, 4)
     await host_member.send("`BREACH: ("+user['ip']+") what is the square root of "+str(math_problem)+". You have %s seconds. or your system is compromized`" % (str(time_)))
     while True:
         try:
             msg = await bot.wait_for('message', timeout=time_)
-            if msg.content == str(answer) and msg.author.id == host_member.id:
-                bypassed = True
-                await host_member.send("`BREACH: Correct, retaliation sent.`")
-                break
+            if  msg.author.id == host_member.id:
+                if msg.content == str(answer):
+                    bypassed = True
+                    await host_member.send("`BREACH: Correct, retaliation sent.`")
+                    break
+                else:
+                    await host_member.send("`BREACH: Error, incorrect. re-submit answer.`")
             else:
-                await host_member.send("`BREACH: Error, incorrect. re-submit answer.`")
                 continue
         except:
             bypassed = False
@@ -596,7 +769,8 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
         hackers_oldfunds = {'user_id': str(breacher.id)}
         hackers_newFunds = { '$set': {'balance': int(hacker['balance']) + ammount_toTake}}
         newhacker = users_col.update_one(hacker, hackers_newFunds)
-        await host_member.send("`BREACH: "+str(ammount_toTake)+"`<:coin:592831769024397332>` has been taken from your account` ")
+        await host_member.send("`BREACH: "+str(ammount_toTake)+"`<:coin:592831769024397332>` has been taken from your account.` ")
+        await breacher.send("`BREACH: "+str(ammount_toTake)+"`<:coin:592831769024397332>` has been tranferred to your account.` ")
         #redoes logout to stop more hacking to 1 user
 
 
