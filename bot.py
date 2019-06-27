@@ -112,7 +112,8 @@ async def on_guild_join(guild):
 async def tick():
     await asyncio.sleep(5)
     while not bot.is_closed():
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=">login | %s users online" % (users_col.find({'online': True}).count())))
+        if bot != None:
+            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=">login | %s users online" % (users_col.find({'online': True}).count())))
         await asyncio.sleep(10)
         docs = users_col.find({})
         updated_count = 0
