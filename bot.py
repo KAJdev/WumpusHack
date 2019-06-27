@@ -792,23 +792,8 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
                 await host_member.send("`Copying shared history...\nSaving history...truncating history files...`")
                 await host_member.send("`Completed\nDeleting expired sessions... 1 Completed`")
 
-                #if our buddy is connected to anyone
-                if str(host_member.id) in cache.keys():
-                    #grab his connection from cache
-                    outgoing = cache[str(host_member.id)]
-                    #if the type is to another PC
-                    if outgoing['type'] == 1:
-                        #grab the profile of the person our buddy is connected to
-                        host_doc = users_col.find_one({'ip':outgoing['host']})
-                        if host_doc != None:
-                            #grab the member object of the person our buddy is connected to
-                            host_user = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
-                            if host_user != None:
-                                #check to make sure that our buddy isn't connected to himself
-                                if host_user.id != host_member.id:
-                                    #send dc message to person, and remove connection from cache
-                                    await host_user.send("`LOG: user "+ str(host_member) + " ("+doc['ip']+") has disconnected from your network.`")
-                                    del cache[str(host_member.id)]
+                await host_member.send("`LOG: user "+ str(host_member) + " ("+hacker['ip']+") has disconnected from your network.`")
+                del cache[str(host_member.id)]
 
                 #get a list of connections to our buddy typing >logout
                 connections = get_all_connections_to(doc['ip'])
