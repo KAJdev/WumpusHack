@@ -15,7 +15,7 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.2.0.14b"
+version = "2019.2.0.19b"
 
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1, 'cpu_name': "Intel Atom", 'gpu_name': "Integrated Graphics"}
@@ -107,7 +107,7 @@ async def check_timer_breach_cooldown():
         # check if breach timer isnt over (False == no timer)
         if doc['breach'] != False:
             updated_docs += 1
-            expire = float(doc['network']['firewall'])
+            expire = float(doc['breach'])
 
             # if the breach cooldown time (timestamp) is less than right now
             if expire <= time.time():
@@ -736,7 +736,7 @@ async def purchase(ctx, *, id:str=None):
 
                         #check if there is already a timer started, if so, add one hour to existing timer.
                         if new_network['firewall'] != False:
-                            new_network['firewall'] = int(new_network['firewall']) + 3600
+                            new_network['firewall'] = float(new_network['firewall']) + 3600
 
                         else:
                             #otherwise, just add a timer oh 1 hour.
@@ -805,7 +805,7 @@ def randomNumber():
 @bot.command(aliases=['hack', 'br', 'ddos'])
 async def breach(ctx):
     user = users_col.find_one({'user_id': str(ctx.author.id)})
-    if user['breach'] != True:
+    if user['breach'] != False:
         if ctx.guild != None:
             await ctx.message.delete()
         if user == None:
@@ -865,11 +865,16 @@ def get_random_q_a():
         tr['results'][0]['incorrect_answers'].append(answer)
         random.shuffle(tr['results'][0]['incorrect_answers'])
         print(tr)
+        i = 0
         for a in tr['results'][0]['incorrect_answers']:
-            all_a = all_a + str(a)
+            if i == 0:
+                all_a = all_a + str(a)
+            else:
+                all_a = all_a +", "+str(a)
+            i += 1
 
     #always give question and answer
-    return question, answer, all_a, catstring
+    return catstring, all_a, question, answer
 
 # the functiuons nthat we may or may not use (Spoiler alert we do)
 async def breach_starter(host_member, host_doc, ctx, user, breacher):
@@ -877,12 +882,12 @@ async def breach_starter(host_member, host_doc, ctx, user, breacher):
     catstring, all_a, question, answer = get_random_q_a()
     print(answer)
     time_ = calc_time(user, 1.5)
-    await breacher.send("`RETALIATION: ("+host_doc['ip']+") "+" Category:\n"+catstring+"\n"+str(question)+"\nYour Choices:\n"+ str(all_a)+ "\n You have %s seconds, or the breach fails`" % (str(time_)))
+    await breacher.send("`RETALIATION: ("+host_doc['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\n You have %s seconds, or the breach fails`" % (str(time_)))
     correct = False #Does Trivia Stuff
     while correct == False:
         try:
             msg = await bot.wait_for('message', timeout=time_)
-            if  msg.author.id == breacher.id and msg.channel.id == ctx.channel.id:
+            if  msg.author.id == breacher.id and msg.channel.id == breacher.dm_channel.id:
                 if msg.content.lower() == str(answer).lower():
                     await breacher.send("`BREACH: Correct, retaliation sent.`")
                     correct = True
@@ -917,13 +922,13 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
     bypassed = False
     catstring, all_a, question, answer = get_random_q_a()
     print(answer)
-    time_ = calc_time(user, 1.5)
-    await breacher.send("`BREACH: ("+host_doc['ip']+") "+" Category:\n"+catstring+"\n"+str(question)+"\nYour Choices:\n"+ str(all_a)+ "\n You have %s seconds, or 1/4th of your Funds are taken.`" % (str(time_)))
+    time_ = calc_time(host_doc, 1.5)
+    await host_member.send("`BREACH: ("+user['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\n You have %s seconds, or 1/4th of your Funds are taken.`" % (str(time_)))
     correct = False #Does Trivia Stuff
     while correct == False:
         try:
             msg = await bot.wait_for('message', timeout=time_)
-            if  msg.author.id == host_member.id and msg.channel.id == ctx.channel.id:
+            if  msg.author.id == host_member.id and msg.channel.id == host_member.dm_channel.id:
                 if msg.content.lower() == str(answer).lower():
                     bypassed = True
                     await host_member.send("`BREACH: Correct, retaliation sent.`")
