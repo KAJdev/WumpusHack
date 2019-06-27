@@ -89,9 +89,8 @@ async def on_member_update(before, after):
 #On ready
 @bot.event
 async def on_ready():
-    print("Bot is ready and online.")
-    print("servers: %s, ping: %s ms" % (len(bot.guilds), bot.latency * 1000))
     await bot.user.edit(username="WumpusOS Terminal v"+version)
+    print("caching users... ")
     for member in bot.get_all_members():
         if str(member.status) == 'offline':
             doc = users_col.find_one({'user_id': str(member.id)})
@@ -99,6 +98,8 @@ async def on_ready():
                 if str(member.id) not in cache['away']:
                     cache['away'][str(member.id)] = doc['balance']
                     print("cached " + str(member))
+    print("Bot is ready and online.")
+    print("servers: %s, ping: %s ms" % (len(bot.guilds), bot.latency * 1000))
 
 
 @bot.event
@@ -141,6 +142,8 @@ async def login(ctx):
         await ctx.message.delete()
     doc = users_col.find_one({'user_id': str(ctx.author.id)})
     if doc == None:
+        if str(ctx.author.id) in cache.keys():
+            del cache[str(ctx.author.id)]
         embed = discord.Embed(
             title = "Welcome to Wumpus Inc. family!",
                 description = "`Thank you for purchasing your new Wumpus system. Your Wumpus system is the way you can communicate with the world! Your computer is started, and ready to roll! Connect to your nation's help system to get the hang of things.` (>connect help.gov)",
@@ -148,7 +151,7 @@ async def login(ctx):
         )
         await ctx.author.send(embed=embed)
         an_ip = str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255))
-        user = {'user_id': str(ctx.author.id), 'pc': basic_pc_stats, 'network': basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False}
+        user = {'user_id': str(ctx.author.id), 'pc': basic_pc_stats, 'network': basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False, 'email': ctx.author.name.lower() + "@hackweek.com"}
         print('inserting...')
         users_col.insert_one(user)
         print('created user')
@@ -268,7 +271,7 @@ async def connect(ctx, ip : str = None):
                 cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                 return
             if ip == 'mail.gov':
-                email = "%s@mail.gov" % (ctx.author.name)
+                email = user['email']
                 mail_string = "Hi, this is mail.gov, Here you can see your inbox, and send messages. \nUse the `>send <email> <message>` command to send an email!\n\n**inbox for %s**\n```" % (email)
                 mails = mail_col.find({'to': email})
                 if mails.count() < 1:
@@ -405,7 +408,7 @@ async def inbox(ctx):
         return
     else:
         #send inbox
-        email = "%s@mail.gov" % (ctx.author.name)
+        email = user['email']
         mail_string = "Hi, this is mail.gov, Here you can see your inbox, and send messages. \nUse the `>send <email> <message>` command to send an email!\n\n**inbox for %s**\n```" % (email)
         mails = mail_col.find({'to': email})
         if mails.count() < 1:
@@ -453,12 +456,12 @@ async def clear(ctx):
         while True:
             msg = await bot.wait_for('message')
             if msg.content.lower() == "y" and msg.author.id == ctx.author.id:
-                mails = mail_col.find({'to': "%s@mail.gov" % (ctx.author.name)})
+                mails = mail_col.find({'to': user['email']})
                 if mails.count() > 0:
-                    mail_col.delete_many({'to': "%s@mail.gov" % (ctx.author.name)})
+                    mail_col.delete_many({'to': user['email']})
 
                     #send inbox again
-                    email = "%s@mail.gov" % (ctx.author.name)
+                    email = user['email']
                     mail_string = "Hi, this is mail.gov, Here you can see your inbox, and send messages. \nUse the `>send <email> <message>` command to send an email!\n\n**inbox for %s**\n```" % (email)
                     mails = mail_col.find({'to': email})
                     if mails.count() < 1:
@@ -516,12 +519,16 @@ async def send(ctx, mail_to:str=None, *, msg:str=None):
         await ctx.author.send("`LOG: (mail.gov) Please specify a message to send`")
         return
     else:
-        email = "%s@mail.gov" % (ctx.author.name)
+        email = user['email']
         mail_doc = {'to': mail_to, 'from': email, 'content': msg}
         mail_col.insert_one(mail_doc)
         await ctx.author.send("`LOG: (mail.gov) email has been sent.`")
 
-
+@bot.event
+async def on_message(message):
+    if message.content.startswith(">"):
+        print("Command: " + message.content)
+    await bot.process_commands(message)
 
 
 @bot.command()
@@ -777,7 +784,7 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
         doc = victim
         if doc != None:
             if doc['online'] == True:
-                await host_member.send("**`Emergency shutdown iniciated...`**")
+                await host_member.send("**`Emergency shutdown initiated...`**")
                 await host_member.send("`Saving session...`")
                 their_doc = {'user_id': str(host_member.id)}
                 insert_doc = { '$set': {'online': False} }
