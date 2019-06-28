@@ -3,7 +3,7 @@
 
 Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of discord. The bot simulates an operating system for each user called WumpOS. With WumpOS, you can send email, Buy PC parts, set up firewalls, mine crypto currency, connect to other user's PCs, hack other people's PCs, and steal their money, leave funny messages on your friend's PC, and much more.[official discord server](https://discord.gg/m75eCse)
 
-# You can invite the but with [this link](https://discordapp.com/api/oauth2/authorize?client_id=592803813593841689&permissions=8&scope=bot)
+# You can invite the bot with [this link](https://discordapp.com/api/oauth2/authorize?client_id=592803813593841689&permissions=8&scope=bot)
 
 # Table of contents
 - [Team](#Team)
