@@ -58,6 +58,8 @@ Wumpus Hack has been developed by a team of four people.
 
 `System / Stats / Sys` - Shows your system information.
 
+`Ping` - Gets Bots Ping
+
 
 ### Government websites
 
