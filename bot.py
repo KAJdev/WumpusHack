@@ -15,9 +15,6 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 #Main cache
 cache = {'away': {}}
 
-#whether or not to print errors
-debug_status = False
-
 #Version
 version = "2019.2.1.20b"
 
@@ -157,14 +154,13 @@ async def on_ready():
 
 
 @bot.command(name="debug")
-async def _debug():
+async def _debug(ctx):
     #small command to enable or disable raising of all command errors
     if ctx.author.id not in owner_ids:
         return
 
-    global debug_status
-    debug_status = not debug_status
-    ctx.author.send("`Updated debug status to be`" + str(debug_status))
+    config.DEBUG_STATUS = not config.DEBUG_STATUS
+    await ctx.author.send("`Updated debug status to be`" + str(config.DEBUG_STATUS))
 
 @bot.event
 async def on_guild_join(guild):
@@ -749,11 +745,11 @@ async def send(ctx, mail_to:str=None, *, msg:str=None):
 
 #Pay Command
 @bot.command()
-async def pay(ctx, ip: str = None, amount: int = None):
+async def pay(ctx, ip:str=None, amount:int=None):
     #grabs all profiles needed for this command
     author = users_col.find_one({'user_id': str(ctx.author.id)})
     user = users_col.find_one({'ip': ip})
-    user_member = discord.utils.get(bot.get_all_members(), id = int(user['user_id']))
+
     if ctx.guild != None:
         await ctx.message.delete()
     if author == None:
@@ -762,7 +758,7 @@ async def pay(ctx, ip: str = None, amount: int = None):
     if author['online'] == False:
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
-    if str(ctx.author.id) not in cache:
+    if str(ctx.author.id) not in cache.keys():
         raise commands.CommandNotFound
         return
 
@@ -771,23 +767,29 @@ async def pay(ctx, ip: str = None, amount: int = None):
         raise commands.CommandNotFound
         return
 
+    #if anything went wrong grabbing users just cancel
+    if user == None or author == None or amount == None:
+        await ctx.author.send("`LOG: (bank.gov) error in command`")
+        return
+
     #check if they are a cheapskate
     if amount > author['balance']:
         await ctx.author.send("`LOG: Insufficient Funds`")
         return
 
-    #if anything went wrong grabbing users just cancel
-    if user == None or user_member == None or author == None:
-        await ctx.author.send("`LOG: User not found.`")
-        return
     if amount <= 0:
-        await ctx.author.send("`LOG: Amount must be above 0`")
+        await ctx.author.send("`LOG: (bank.gov) Amount must be above 0`")
         return
     #take from one, and give to the other. Notify both parties.
+    user_member = discord.utils.get(bot.get_all_members(), id = int(user['user_id']))
+    if user_member == None:
+        await ctx.author.send("`LOG: (bank.gov) User not found.`")
+        return
+
     users_col.update_one({'user_id': author['user_id']}, {'$set': {'balance': author['balance'] - amount}})
     users_col.update_one({'user_id': user['user_id']}, {'$set': {'balance': author['balance'] + amount}})
-    await ctx.author.send("`LOG: (bank.gov) Sent "+ ip + " " + amount + "`<:coin:592831769024397332>")
-    await user_member.send("`LOG: (bank.gov) You have recived " + amount + "` <:coin:592831769024397332> `From: " + str(ctx.author) + "`")
+    await ctx.author.send("`LOG: (bank.gov) Sent "+ ip + " " + str(amount) + "`<:coin:592831769024397332>")
+    await user_member.send("`LOG: (bank.gov) You have recived " + str(amount) + "` <:coin:592831769024397332> `From: " + str(ctx.author) + "`")
 
 @bot.event
 async def on_message(message):
@@ -1046,7 +1048,7 @@ async def breach(ctx):
                 #give a cooldown now in case something happens
                 hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
                 givecooldown = users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)
-                
+
                 #send the host a message, and start the show!
                 await ctx.author.send("`BREACH: A breach attack has been started... Sent initiation packets, awaiting host.`")
                 await breach_host(host_member, host_doc, ctx, user, breacher)
@@ -1057,7 +1059,7 @@ async def breach(ctx):
     else:
         await ctx.author.send("<:bad:593862973274062883> `INFO: Your Breach Cooldown is still in effect.`")
 
-
+#gets a random question, and answer from an API. with a backup
 def get_random_q_a():
     cat = categories[random.randint(0, len(categories) - 1)]
     dif = difficulties[random.randint(0, len(difficulties) - 1)]
@@ -1093,23 +1095,31 @@ def get_random_q_a():
 
 # the functiuons nthat we may or may not use (Spoiler alert we do)
 async def breach_starter(host_member, host_doc, ctx, user, breacher):
+    #ugh welp.. good luck understanding this tbh
+
+    #get basic stuff
     bypassed = False
     catstring, all_a, question, answer = get_random_q_a()
     doc = user
     print(answer)
     time_ = calc_time(doc)
+    #send initial question
     await breacher.send("`RETALIATION: ("+host_doc['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\nYou have %s seconds, or the breach fails`" % (str(time_)))
     correct = False #Does Trivia Stuff
+
+    #start loop checkign for answer
     while correct == False:
         try:
             msg = await bot.wait_for('message', timeout=time_)
             if  msg.author.id == breacher.id and msg.channel.id == breacher.dm_channel.id:
                 if msg.content.lower() == str(answer).lower():
+                    #they did it! Bounce question back to breach person
                     await breacher.send("`BREACH: Correct, retaliation sent.`")
                     correct = True
                     bypassed = True
                     break
                 else:
+                    #not right, re loop
                     await breacher.send("<:bad:593862973274062883>`BREACH: Error, incorrect. re-submit answer.`")
                     correct = False
             else:
@@ -1118,23 +1128,29 @@ async def breach_starter(host_member, host_doc, ctx, user, breacher):
             bypassed = False
             break
     if bypassed == True:
+        #they did it! call other function
         await breach_host(host_member, host_doc, ctx, user, breacher)
     if bypassed == False:
+        #well shit they didn't answer in time. do all this message garbage VVV
+
+        #remove connections first
         del cache[str(breacher.id)]
         del cache[str(host_member.id)]
+
+        #send a ton of stuff with information about end of breach
         await breacher.send("`BREACH FAILED: (You did not answer the math problem in time, the breach has failed.)`")
         await host_member.send("`BREACH BLOCKED: (The breach has been stopped by your defenses)`")
         await breacher.send("`INFO: A Cooldown for Breaching has been set on your account for 10 minutes.`")
         await host_member.send("`LOG: %s has been disconnected.`" % (user['ip']))
         await breacher.send("`LOG: %s has disconnected you from their network.`" % (host_doc['ip']))
+
+        #add cooldown
         hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
-        givecooldown = users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)#
-        #await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
-        #hackercooldownrem = { '$set': {'breach': False}}
-        #removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
+        givecooldown = users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)
 
 
 async def breach_host(host_member, host_doc, ctx, user, breacher):
+    #ok now back to the breacher guy. this function is identical to the last, except for which side its for.
     bypassed = False
     catstring, all_a, question, answer = get_random_q_a()
     print(answer)
@@ -1163,6 +1179,7 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
         await breach_starter(host_member, host_doc, ctx, user, breacher)
 
     if bypassed == False:
+        #they breached it! take the money, and logout the breached persons PC to prevent them from being hacked again
         await host_member.send("`DEFENSE FAILED: (You did not answer the trivia question in time, your computer is compromized.)`")
         await breacher.send("`BREACH SUCCESFUL: (You have compromized the host's Computer, 1/4th of their funds will be moved into your account.)`")
         hacker = users_col.find_one({'user_id': str(breacher.id)})#Gets Hackers Document
@@ -1216,14 +1233,11 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
         await breacher.send("`INFO: A Cooldown for Breaching has been set on your account for 10 minutes.`")
         hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
         givecooldown = users_col.update_one(hackers_oldfunds, hackercooldownadd)
-        #await asyncio.sleep(600)
-        #await breacher.send("`INFO: Your 10 minute Cooldown is now removed, you may now use >Breach`")
-        #hackercooldownrem = { '$set': {'breach': False}}
-        #removecooldown = users_col.update_one(hackers_oldfunds, hackercooldownrem)
 
 #Edit connection message
 @system.command()
 async def editcm(ctx, *, message = None):
+    #simple command to edit what peopel see when they connect to you
     if ctx.guild != None:
         await ctx.message.delete()
     if message == None:
@@ -1243,6 +1257,7 @@ async def editcm(ctx, *, message = None):
 
 @bot.command(name='print', aliases=['log', 'pr'])
 async def _print(ctx, *, msg:str=None):
+    #prints messages to peoples consoles. If your connected to a User, and not in a breach, you can log to their PC, meaning send msgs back and forth
     if ctx.guild != None:
         await ctx.message.delete()
     user = users_col.find_one({'user_id': str(ctx.author.id)})
@@ -1252,26 +1267,38 @@ async def _print(ctx, *, msg:str=None):
     if user['online'] == False:
         await ctx.author.send("`Your computer is not online. Please >login`")
         return
+
+    #cant send ""
     if msg == None:
         await ctx.author.send("<:bad:593862973274062883> `error in command \'print\'. A message must be provided.`")
         return
+
+    #check if anyone is connected to them, and send message
     if str(ctx.author.id) not in cache.keys():
+        #search through all connections
         for key, value in cache.items():
             if key == 'away':
                 continue
+
+            #if IPs match
             if value['host'] == user['ip']:
+                #get user
                 host_user = discord.utils.get(bot.get_all_members(), id=int(key))
                 if host_user != None:
+                    #send message
                     await host_user.send("`LOG: ("+value['host']+") "+msg+"`")
 
         await ctx.author.send("`LOG: ("+user['ip']+") "+msg+"`")
 
     else:
+        #check if they are connected to anyone and send message AND if anyone is connected to them
         doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
         if doc != None:
+            #search through all connections
             for key, value in cache.items():
                 if key == 'away':
                     continue
+                #matching IPs awww <3
                 if value['host'] == doc['ip']:
                     host_user = discord.utils.get(bot.get_all_members(), id=int(key))
                     if host_user.id == ctx.author.id:
@@ -1287,12 +1314,14 @@ async def _print(ctx, *, msg:str=None):
                 return
 
         else:
+            #if it is some service, or not a user PC that they are connected to
             await ctx.author.send("`Error: server refused packets.`")
             return
 
 #Invite
 @bot.command()
 async def invite(ctx):
+    #send link to invite the bot to your server
     embed = discord.Embed(
         title = "**Invite Me! 🔗**",
         url = "https://discordapp.com/api/oauth2/authorize?client_id=592803813593841689&permissions=8&scope=bot",
@@ -1301,13 +1330,15 @@ async def invite(ctx):
     await ctx.send(embed = embed)
 
 #Cache
-@bot.command()
+@bot.command(name="cache")
 async def _cache(ctx):
+    #debug command to show the cache in console
     print(cache)
 
 #Support
 @bot.command()
 async def support(ctx):
+    #send link to support discord server
     embed = discord.Embed(
         title = "**Support Server! 🔗**",
         url = "https://discord.gg/GC7Pw9Y",
@@ -1318,6 +1349,7 @@ async def support(ctx):
 #Github
 @bot.command()
 async def github(ctx):
+    #send link to github repo
     embed = discord.Embed(
         title = "**Github Repository! 🔗**",
         url = "https://github.com/KAJdev/WumpusHack",
@@ -1328,6 +1360,10 @@ async def github(ctx):
 #Reset
 @bot.command()
 async def reset(ctx, user : discord.User = None):
+    #this command isnt ready yet. and probably wont be active during hack week
+    raise commands.CommandNotFound
+
+
     if ctx.guild != None:
         await ctx.message.delete()
     if user == None or ctx.author.id not in owner_ids:
@@ -1359,13 +1395,16 @@ async def reset(ctx, user : discord.User = None):
 #Command not found
 @bot.event
 async def on_command_error(ctx, error):
+    #always make sure to leave no clutter in a guild.
     if ctx.guild != None:
         await ctx.message.delete()
 
+    #no command? *gasp*
     if isinstance(error, commands.CommandNotFound):
         await ctx.author.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
 
-    if debug_status == True:
+    #print the error if debug is enabled
+    if config.DEBUG_STATUS == True:
         raise error
 
 
