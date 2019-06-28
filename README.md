@@ -3,12 +3,14 @@
 
 Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of discord. The bot simulates an operating system for each user called WumpOS. With WumpOS, you can send email, Buy PC parts, set up firewalls, mine crypto currency, connect to other user's PCs, hack other people's PCs, and steal their money, leave funny messages on your friend's PC, and much more.[official discord server](https://discord.gg/m75eCse)
 
+# You can invite the but with [this link](https://discordapp.com/api/oauth2/authorize?client_id=592803813593841689&permissions=8&scope=bot)
+
 # Table of contents
 - [Team](#Team)
-- [Setup](#Setup)
 - [Commands](#Commands)
 - [Configuration options](#Configuration-options)
 - [License](#License)
+- [Personal use](#Personal use)
 
 
 
@@ -29,18 +31,6 @@ Wumpus Hack has been developed by a team of four people.
 4.) Ita Ash#8916
 -Graphic Designer
 
-
-## Setup
-You can do all these steps to run your own instance of WUmpusHack, or join a server with the Official bot and get right to hacking!
-[official discord server](https://discord.gg/m75eCse)
-
-1. Make sure you have python 3.6+
-2. Close the repo, or download the .zip file.
-3. open a terminal, and type `pip install -U discord.py` to install discord, and then `pip install Python-Trivia-API`
-4. Download and get a MongoDB running, or use a free host (https://cloud.mongodb.com/)
-5. Fill out the config.py, with a bot token, Mongo URI, prefix, and tick speed
-6. open terminal, navigate to the directory with the bot, (cd <folder name>) and type `py bot.py`
-7. add your bot account to a server, and start hacking away!
 
 ## Commands
 #### All these commands are used in a DM with the bot, if not, msgs will be sent to DMs
@@ -110,3 +100,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 [License](https://github.com/KAJdev/WumpusHack/blob/master/LICENSE).
+
+## Personal use
+You can do all these steps to run your own instance of WUmpusHack, or join a server with the Official bot and get right to hacking!
+[official discord server](https://discord.gg/m75eCse)
+
+1. Make sure you have python 3.6+
+2. Close the repo, or download the .zip file.
+3. open a terminal, and type `pip install -U discord.py` to install discord, and then `pip install Python-Trivia-API`
+4. Download and get a MongoDB running, or use a free host (https://cloud.mongodb.com/)
+5. Fill out the config.py, with a bot token, Mongo URI, prefix, and tick speed
+6. open terminal, navigate to the directory with the bot, (cd <folder name>) and type `py bot.py`
+7. add your bot account to a server, and start hacking away!
