@@ -1,6 +1,7 @@
 #Imports
 print('Importing Libraries')
-import discord, pymongo, config, asyncio, random, dns, json, math, time
+import discord, pymongo, config, asyncio, random, dns, json, math, time, importlib
+before_startup = time.time()
 from discord.ext import commands
 from datetime import datetime
 from pytrivia import Category, Diffculty, Type, Trivia
@@ -17,10 +18,13 @@ cache = {'away': {}}
 #Version
 version = "2019.2.0.19b"
 
+#tick counter
+tick_number = 0
+
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1, 'cpu_name': "Intel Atom", 'gpu_name': "Integrated Graphics"}
 basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
-game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov']
+game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov']#
 
 #categories
 categories = [Category.Maths, Category.Computers]
@@ -96,6 +100,10 @@ async def check_timer_firewall():
     print("updated %s firewall cooldown docs in %s seconds" % (str(updated_docs), str(round(difference, 1))))
 
 
+@bot.command()
+async def reload(ctx):
+    importlib.reload(config)
+
 
 #checks on breach cooldown timer
 async def check_timer_breach_cooldown():
@@ -123,32 +131,32 @@ async def check_timer_breach_cooldown():
     difference = time.time() - right_now
     print("updated %s breach cooldown docs in %s seconds" % (str(updated_docs), str(round(difference, 1))))
 
-@bot.event
-async def on_member_update(before, after):
-    if before.status != after.status:
-        if str(after.status) == "offline":
-            if str(after.id) not in cache['away']:
-                doc = users_col.find_one({'user_id': str(after.id)})
-                if doc != None:
-                    cache['away'][str(after.id)] = doc['balance']
-                    print("cached " + str(after))
-
-        elif str(before.status) == 'offline':
-            if str(after.id) in cache['away']:
-                doc = users_col.find_one({'user_id': str(after.id)})
-                if doc != None:
-                    difference = doc['balance'] - cache['away'][str(after.id)]
-                    if difference < 26:
-                        return
-                    del cache['away'][str(after.id)]
-                    embed = discord.Embed(
-                        title = "Report",
-                            description = "Actions have taken place since you were away.\nYou have gained %s <:coin:592831769024397332>." % (difference),
-                        color = 0x35363B
-                    )
-                    if doc['online'] == True:
-                        await after.send(embed=embed)
-                    print(str(after) + " woke up")
+#@bot.event
+#async def on_member_update(before, after):
+#    if before.status != after.status:
+#        if str(after.status) == "offline":
+#            if str(after.id) not in cache['away']:
+#                doc = users_col.find_one({'user_id': str(after.id)})
+#                if doc != None:
+#                    cache['away'][str(after.id)] = doc['balance']
+#                    print("cached " + str(after))
+#
+#        elif str(before.status) == 'offline':
+#            if str(after.id) in cache['away']:
+#                doc = users_col.find_one({'user_id': str(after.id)})
+#                if doc != None:
+#                    difference = doc['balance'] - cache['away'][str(after.id)]
+#                    if difference < 26:
+#                       return
+#                    del cache['away'][str(after.id)]
+#                    embed = discord.Embed(
+#                        title = "Report",
+#                            description = "Actions have taken place since you were away.\nYou have gained %s <:coin:592831769024397332>." % (difference),
+#                        color = 0x35363B
+#                    )
+#                   if doc['online'] == True:
+#                        await after.send(embed=embed)
+#                    print(str(after) + " woke up")
 
 
 @bot.command()
@@ -166,16 +174,16 @@ async def on_ready():
     await bot.user.edit(username="WumpOS Terminal v"+version)
     if bot != None:
         await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="Bot starting..."))
-    print("caching users... ")
-    for member in bot.get_all_members():
-        if str(member.status) == 'offline':
-            doc = users_col.find_one({'user_id': str(member.id)})
-            if doc != None:
-                if str(member.id) not in cache['away']:
-                    cache['away'][str(member.id)] = doc['balance']
-                    print("cached " + str(member))
+    #print("caching users... ")
+    #for member in bot.get_all_members():
+    #    if str(member.status) == 'offline':
+    #        doc = users_col.find_one({'user_id': str(member.id)})
+    #        if doc != None:
+    #            if str(member.id) not in cache['away']:
+    #                cache['away'][str(member.id)] = doc['balance']
+    #                print("cached " + str(member))
     print("Bot is ready and online.")
-    print("servers: %s, ping: %s ms" % (len(bot.guilds), bot.latency * 1000))
+    print("servers: %s, ping: %s ms, startup time: %s seconds" % (len(bot.guilds), bot.latency * 1000, str(round(time.time() - before_startup, 2))))
 
 
 @bot.event
@@ -184,6 +192,7 @@ async def on_guild_join(guild):
     print("WumpusHack Joined "+ str(guild))
 
 def mine():
+    before = time.time()
     docs = users_col.find({})
     updated_count = 0
     for doc in docs:
@@ -191,19 +200,29 @@ def mine():
             continue
         new_doc = { '$set': {'balance': doc['balance'] + doc['pc']['gpu']}}
         users_col.update_one(doc, new_doc)
+        updated_count += 1
 
-    print("Tick. Updated %s users." % (docs.count()))
+    difference = time.time() - before
+    print("Updated %s online users in %s seconds" % (updated_count, str(round(difference, 1))))
 
 
 async def tick():
     await asyncio.sleep(5)
     while not bot.is_closed():
+        await asyncio.sleep(config.TICK_SPEED)
+        before = time.time()
+        global tick_number
+        tick_number += 1
+        print("TICK " + str(tick_number))
         if bot != None:
-            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=">login | %s users online" % (users_col.find({'online': True}).count())))
-        await asyncio.sleep(10)
+            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=">login | %s users online | Tick %s" % (users_col.find({'online': True}).count(), str(tick_number))))
+
         mine()
         await check_timer_firewall()
         await check_timer_breach_cooldown()
+        if round(time.time() - before, 1) > 5:
+            print("ERROR | Tick took too long (%s seconds)" % (str(round(time.time() - before, 1))))
+        print("")
 
 
 
@@ -782,10 +801,14 @@ async def system(ctx):
                 firewall_time = round(float(doc['network']['firewall'])  - time.time())
                 doc['network']['firewall'] = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(firewall_time))
 
-            sys_string = "**__Computer Information__**\n**Ram** - "+str(doc['pc']['ram'])+ " GB\n **CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n **GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n **Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+            sys_string = "**__Computer Information__**\n**RAM** - "+str(doc['pc']['ram'])+ " GB\n**CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n**GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n**Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
             if str(ctx.author.id) in cache.keys():
                 sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
+
+            if doc['breach'] != False and doc['breach'] != True:
+                breach_time = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(round(float(doc['breach'])  - time.time())))
+                sys_string = sys_string + "\n\n**Breach Cooldown** - " + breach_time
 
             embed = discord.Embed(
                 title = "System Information",
@@ -805,7 +828,7 @@ def randomNumber():
 @bot.command(aliases=['hack', 'br', 'ddos'])
 async def breach(ctx):
     user = users_col.find_one({'user_id': str(ctx.author.id)})
-    if user['breach'] != False:
+    if user['breach'] == False:
         if ctx.guild != None:
             await ctx.message.delete()
         if user == None:
@@ -820,7 +843,7 @@ async def breach(ctx):
         if cache[str(ctx.author.id)]['type'] != 1:
             await ctx.author.send("<:bad:593862973274062883> `Error: Server refused packets`")
             return
-        if cache[str(ctx.author.id)]['type'] == 3:
+        if cache[str(ctx.author.id)]['type'] == 4:
             await ctx.author.send("<:bad:593862973274062883> `Error: Port already open.`")
             return
         #check for cooldown
@@ -829,7 +852,7 @@ async def breach(ctx):
         if host_doc != None:
             host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
             if host_member != None:
-                cache[str(host_member.id)] = {'status': False, 'type': 3, 'host': "**BREACH**"}
+                cache[str(host_member.id)] = {'status': False, 'type': 4, 'host': "**BREACH**"}
                 breacher = ctx.author
                 hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
                 givecooldown = users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)
