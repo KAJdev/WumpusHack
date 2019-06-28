@@ -79,6 +79,7 @@ Wumpus Hack has been developed by a team of four people.
 |URI|the MongoDB URI string|
 |PREFIX|the prefix(s) the bot will respond to|
 |TICK_SPEED|how fast the bot gives money, and checks for cooldowns. (not recommended lower than 4)|
+|DEBUG_STATUS|wheather or not to print logs to console|
 
 ## License
 MIT License
