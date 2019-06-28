@@ -16,7 +16,7 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.2.1.0b"
+version = "2019.3.2.0b"
 
 #tick counter
 tick_number = 0
