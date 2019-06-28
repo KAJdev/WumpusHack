@@ -16,7 +16,7 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 cache = {'away': {}}
 
 #Version
-version = "2019.3.2.0b"
+version = "2019.2.1.20b"
 
 #tick counter
 tick_number = 0
@@ -703,24 +703,25 @@ async def pay(ctx, *, ip: str = None, amount: int = None):
     elif cache[str(ctx.author.id)]['host'] != 'bank.gov':
         raise commands.CommandNotFound
         return
-    if amount > user['balance']:
+    if amount > author['balance']:
         await ctx.author.send("`LOG: Insufficient Funds`")
         return
-    if user == None:
+    if user == None or user_member == None or author == None:
         await ctx.author.send("`LOG: User not found.`")
         return
     if amount <= 0:
         await ctx.author.send("`LOG: Amount must be above 0`")
         return
-    users_col.update_one(author, {'$set': {'balance': author['balance'] - amount}})
-    users_col.update_one(user, {'$set': {'balance': author['balance'] + amount}})
-    await ctx.author.send("`LOG: Sent ("+ ip + ") " + amount + "`<:coin:592831769024397332>")
-    await user_member.send("`LOG: You have recived " + amount + "`<:coin:592831769024397332>`From: " + str(ctx.author) + "`")
+    users_col.update_one({'user_id': author['user_id']}, {'$set': {'balance': author['balance'] - amount}})
+    users_col.update_one({'user_id': user['user_id']}, {'$set': {'balance': author['balance'] + amount}})
+    await ctx.author.send("`LOG: (bank.gov) Sent "+ ip + " " + amount + "`<:coin:592831769024397332>")
+    await user_member.send("`LOG: (bank.gov) You have recived " + amount + "` <:coin:592831769024397332> `From: " + str(ctx.author) + "`")
 
 @bot.event
 async def on_message(message):
     if message.content.startswith(">"):
         print("Command: " + message.content)
+        print("User: " + str(message.author))
     await bot.process_commands(message)
 
 
