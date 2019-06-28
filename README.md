@@ -10,7 +10,7 @@ Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of dis
 - [Commands](#Commands)
 - [Configuration options](#Configuration-options)
 - [License](#License)
-- [Personal use](#Personal use)
+- [Personal use](#Personal)
 
 
 
@@ -101,7 +101,7 @@ SOFTWARE.
 
 [License](https://github.com/KAJdev/WumpusHack/blob/master/LICENSE).
 
-## Personal use
+## Personal
 You can do all these steps to run your own instance of WUmpusHack, or join a server with the Official bot and get right to hacking!
 [official discord server](https://discord.gg/m75eCse)
 
