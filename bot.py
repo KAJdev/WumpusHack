@@ -952,7 +952,7 @@ async def breach_starter(host_member, host_doc, ctx, user, breacher):
     doc = user
     print(answer)
     time_ = calc_time(doc)
-    await breacher.send("`RETALIATION: ("+host_doc['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\n You have %s seconds, or the breach fails`" % (str(time_)))
+    await breacher.send("`RETALIATION: ("+host_doc['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\nYou have %s seconds, or the breach fails`" % (str(time_)))
     correct = False #Does Trivia Stuff
     while correct == False:
         try:
@@ -994,7 +994,7 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
     print(answer)
     doc = host_doc
     time_ = calc_time(doc)
-    await host_member.send("`BREACH: ("+user['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\n You have %s seconds, or 1/4th of your Funds are taken.`" % (str(time_)))
+    await host_member.send("`BREACH: ("+user['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\nYou have %s seconds, or 1/4th of your Funds are taken.`" % (str(time_)))
     correct = False #Does Trivia Stuff
     while correct == False:
         try:
@@ -1017,7 +1017,7 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
         await breach_starter(host_member, host_doc, ctx, user, breacher)
 
     if bypassed == False:
-        await host_member.send("`DEFENSE FAILED: (You did not answer the math problem in time, your computer is compromized.)`")
+        await host_member.send("`DEFENSE FAILED: (You did not answer the trivia question in time, your computer is compromized.)`")
         await breacher.send("`BREACH SUCCESFUL: (You have compromized the host's Computer, 1/4th of their funds will be moved into your account.)`")
         hacker = users_col.find_one({'user_id': str(breacher.id)})#Gets Hackers Document
         victim = users_col.find_one({'user_id': str(host_member.id)})#Gets Victims Document
