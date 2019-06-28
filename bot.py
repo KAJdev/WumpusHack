@@ -249,7 +249,7 @@ def calc_time(doc):
             return 25
         if specs < 15 and specs > 3:
             return 15
-        if specs < 5 and specs > 3:
+        if specs < 5 and specs >= 3:
             return 10
 
 
