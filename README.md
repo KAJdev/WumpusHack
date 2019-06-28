@@ -1,12 +1,20 @@
 # Wumpus Hack
-Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of discord. The bot simulates an operating system for each user called WumpOS. With WumpOS, you can send email, [official discord server](https://discord.gg/m75eCse)
+![wumpus](https://cdn.discordapp.com/attachments/594036341810135040/594036466347278352/wumpusos-removebg-preview_1.png)
+
+Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of discord. The bot simulates an operating system for each user called WumpOS. With WumpOS, you can send email, Buy PC parts, set up firewalls, mine crypto currency, connect to other user's PCs, hack other people's PCs, and steal their money, leave funny messages on your friend's PC, and much more.[official discord server](https://discord.gg/m75eCse)
+
+# You can invite the bot with [this link](https://discordapp.com/api/oauth2/authorize?client_id=592803813593841689&permissions=8&scope=bot)
 
 # Table of contents
 - [Team](#Team)
-- [Setup](#Setup)
 - [Commands](#Commands)
 - [Configuration options](#Configuration-options)
 - [License](#License)
+- [Personal use](#Personal)
+
+
+
+![wumpus-white](https://cdn.discordapp.com/attachments/594036341810135040/594036475293859890/pigdis-removebg-preview.png)
 
 ## Team
 Wumpus Hack has been developed by a team of four people.
@@ -23,18 +31,6 @@ Wumpus Hack has been developed by a team of four people.
 4.) Ita Ash#8916
 -Graphic Designer
 
-
-## Setup
-You can do all these steps to run your own instance of WUmpusHack, or join a server with the Official bot and get right to hacking!
-[official discord server](https://discord.gg/m75eCse)
-
-1. Make sure you have python 3.6+
-2. Close the repo, or download the .zip file.
-3. open a terminal, and type `pip install -U discord.py` to install discord, and then `pip install Python-Trivia-API`
-4. Download and get a MongoDB running, or use a free host (https://cloud.mongodb.com/)
-5. Fill out the config.py, with a bot token, Mongo URI, prefix, and tick speed
-6. open terminal, navigate to the directory with the bot, (cd <folder name>) and type `py bot.py`
-7. add your bot account to a server, and start hacking away!
 
 ## Commands
 #### All these commands are used in a DM with the bot, if not, msgs will be sent to DMs
@@ -81,17 +77,39 @@ You can do all these steps to run your own instance of WUmpusHack, or join a ser
 |TICK_SPEED|how fast the bot gives money, and checks for cooldowns. (not recommended lower than 4)|
 
 ## License
-WumpusHack - Copyright (C) 2019  WumpusHack Dev team
+MIT License
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+Copyright (c) 2019 KAJ4
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see the [License](https://github.com/KAJdev/WumpusHack/blob/master/LICENSE).
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+[License](https://github.com/KAJdev/WumpusHack/blob/master/LICENSE).
+
+## Personal
+You can do all these steps to run your own instance of WumpusHack, or join a server with the Official bot and get right to hacking!
+[official discord server](https://discord.gg/m75eCse)
+
+1. Make sure you have python 3.6+
+2. Close the repo, or download the .zip file.
+3. open a terminal, and type `pip install -U discord.py` to install discord, and then `pip install Python-Trivia-API`
+4. Download and get a MongoDB running, or use a free host (https://cloud.mongodb.com/)
+5. Fill out the config.py, with a bot token, Mongo URI, prefix, and tick speed
+6. open terminal, navigate to the directory with the bot, (cd <folder name>) and type `py bot.py`
+7. add your bot account to a server, and start hacking away!
+8. Although remember, you wont be able to hack anyone outside your server (Not Global with the Actual Bot)
