@@ -60,7 +60,7 @@ Wumpus Hack has been developed by a team of four people.
 
 `Ping` - Gets Bots Ping
 
-`Pay` - Pay another member using Pay <IP> <Amount>.
+`Pay` - Pay another member using Pay {IP} {Amount}.
 
 
 ### Government websites
