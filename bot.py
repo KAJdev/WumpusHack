@@ -1265,9 +1265,11 @@ async def reset(ctx, user : discord.User = None):
 async def on_command_error(ctx, error):
     if ctx.guild != None:
         await ctx.message.delete()
+
     if isinstance(error, commands.CommandNotFound):
-        await ctx.author.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content)
-    elif debug_status:
+        await ctx.author.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
+
+    if debug_status == True:
         raise error
 
 
