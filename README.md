@@ -8,7 +8,6 @@ Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of dis
 # Table of contents
 - [Team](#Team)
 - [Commands](#Commands)
-- [Configuration options](#Configuration-options)
 - [License](#License)
 
 
@@ -70,15 +69,6 @@ Wumpus Hack has been developed by a team of four people.
 
 `bank.gov` - send Money to Players.
 
-
-## Configuration options
-|var name|Description|
-|------|-----------|
-|TOKEN|The bot token|
-|URI|the MongoDB URI string|
-|PREFIX|the prefix(s) the bot will respond to|
-|TICK_SPEED|how fast the bot gives money, and checks for cooldowns. (not recommended lower than 4)|
-|DEBUG_STATUS|wheather or not to print logs to console|
 
 ## License
 MIT License
