@@ -36,9 +36,9 @@ Wumpus Hack has been developed by a team of four people.
 #### All these commands are used in a DM with the bot, if not, msgs will be sent to DMs
 `Connect` - Connects to another PC.
 
-`Disonnect` - Disconnects from another PC.
+`Disconnect` - Disconnects from another PC.
 
-`system editcm <msg>` - Edits your connection message.
+`System editcm <msg>` - Edits your connection message.
 
 `Github` - Sends a link to the github repository.
 
