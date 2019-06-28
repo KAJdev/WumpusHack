@@ -1,5 +1,5 @@
 # Wumpus Hack
-Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of discord. The bot simulates an operating system for each user called WumpOS. With WumpOS, you can send email, https://discord.gg/nECeGK4
+Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of discord. The bot simulates an operating system for each user called WumpOS. With WumpOS, you can send email, [official discord server](https://discord.gg/m75eCse)
 
 ## Table of contents
 - [Team](#Team)
@@ -39,22 +39,38 @@ You can do all these steps to run your own instance of WUmpusHack, or join a ser
 ## Commands
 #### All these commands are used in a DM with the bot, if not, msgs will be sent to DMs
 `Connect` - Connects to another PC.
+
 `Disonnect` - Disconnects from another PC.
+
 `system editcm <msg>` - Edits your connection message.
+
 `Github` - Sends a link to the github repository.
+
 `Invite` - Sends a link to invite me.
+
 `Login` - Logs onto your computer.
+
 `Logout` - Logs out of your computer.
+
 `Reset` - Resets all of your stats
+
 `Support` - Sends an invite link to the support server.
+
 `Breach` / Hack - Breach into someones computer/system.
+
 `Print` - Print a message in your computers log.
+
 `System / Stats / Sys` - Shows your system information.
 
-Government websites
+
+# Government websites
+
 `store.gov` - buy and upgrade your pc!
+
 `help.gov` - this network.
+
 `mail.gov` - see your inbox, and send messages.
+
 
 ## Configuration options
 |var name|Description|
