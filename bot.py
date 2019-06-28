@@ -494,7 +494,7 @@ async def scan(ctx):
         return
 
     time_ = calc_loading(user, 600)
-    msg = await ctx.author.send("<a:loading2:592819419604975797> `scraping for IP addresses. (this will take around %s minute(s))`" % round(time_ / 60))
+    msg = await ctx.author.send("<a:loading2:592819419604975797> `scraping for IP addresses. ( This will take around %s Minute(s) )`" % round(time_ / 60))
 
     cache[str(ctx.author.id)] = {'status': True, 'type': 3, 'host': "using network card to scan for IPs"}
     await asyncio.sleep(time_)
