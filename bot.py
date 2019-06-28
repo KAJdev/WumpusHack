@@ -15,6 +15,9 @@ bot = commands.Bot(command_prefix = config.DEFAULT_PREFIX, case_insensitive = Tr
 #Main cache
 cache = {'away': {}}
 
+#whether or not to print errors
+debug_status = False
+
 #Version
 version = "2019.2.1.20b"
 
@@ -185,6 +188,12 @@ async def on_ready():
     print("Bot is ready and online.")
     print("servers: %s, ping: %s ms, startup time: %s seconds" % (len(bot.guilds), bot.latency * 1000, str(round(time.time() - before_startup, 2))))
 
+
+@bot.command(name="debug")
+async def _debug():
+    global debug_status
+    debug_status = not debug_status
+    ctx.send("`Updated debug status to be`" + str(debug_status))
 
 @bot.event
 async def on_guild_join(guild):
@@ -427,7 +436,7 @@ async def connect(ctx, ip : str = None):
             if ip == 'bank.gov':
                 embed = discord.Embed(
                     title = "https://bank.gov",
-                    description = "Welcome to Bank.gov\n\nYour Balance:\n `" + user['balance'] + "`<:coin:592831769024397332>\n\n**Pay** - Send Money to other players:\n`>pay <IP Address> <Amount>`",
+                    description = "Welcome to Bank.gov\n\nYour Balance:\n `" + str(user['balance']) + "`<:coin:592831769024397332>\n\n**Pay** - Send Money to other players:\n`>pay <IP Address> <Amount>`",
                     color = 0x7289da
                 )
                 await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
@@ -1257,8 +1266,8 @@ async def on_command_error(ctx, error):
     if ctx.guild != None:
         await ctx.message.delete()
     if isinstance(error, commands.CommandNotFound):
-        await ctx.author.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
-    else:
+        await ctx.author.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content)
+    elif debug_status:
         raise error
 
 
