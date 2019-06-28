@@ -10,7 +10,6 @@ Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of dis
 - [Commands](#Commands)
 - [Configuration options](#Configuration-options)
 - [License](#License)
-- [Personal use](#Personal)
 
 
 
@@ -105,16 +104,3 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 [License](https://github.com/KAJdev/WumpusHack/blob/master/LICENSE).
-
-## Personal
-You can do all these steps to run your own instance of WumpusHack, or join a server with the Official bot and get right to hacking!
-[official discord server](https://discord.gg/m75eCse)
-
-1. Make sure you have python 3.6+
-2. Close the repo, or download the .zip file.
-3. open a terminal, and type `pip install -U discord.py` to install discord, and then `pip install Python-Trivia-API`
-4. Download and get a MongoDB running, or use a free host (https://cloud.mongodb.com/)
-5. Fill out the config.py, with a bot token, Mongo URI, prefix, and tick speed
-6. open terminal, navigate to the directory with the bot, (cd <folder name>) and type `py bot.py`
-7. add your bot account to a server, and start hacking away!
-8. Although remember, you wont be able to hack anyone outside your server (Not Global with the Actual Bot)
