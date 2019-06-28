@@ -424,7 +424,7 @@ async def connect(ctx, ip : str = None):
                 await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
                 cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                 return
-                
+
         doc = users_col.find_one({'ip': ip})
         if doc != None:
             test_member = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
@@ -1047,17 +1047,17 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
                 await host_member.send("`Copying shared history...\nSaving history...truncating history files...`")
                 await host_member.send("`Completed\nDeleting expired sessions... 1 Completed`")
 
-                await host_member.send("`LOG: user "+ str(host_member) + " ("+hacker['ip']+") has disconnected from your network.`")
-                del cache[str(host_member.id)]
-
-                #get a list of connections to our buddy typing >logout
+                #get a list of connections to our buddy after the breach
                 connections = get_all_connections_to(doc['ip'])
                 for connection in connections:
                     print(str(connection))
-                    #send dc msg to each person connected to our buddy
+                    connector = users_col.find_one({'user_id': connection.id})
+                    #send dc msg to each person connected to our buddy and vise versa to our buddy.
+                    await host_member.send("`LOG: user "+ str(connection) + " ("+connector['ip']+") has disconnected from your network.`")
                     await connection.send("`LOG: Lost connection to "+doc['ip']+"`")
-                    #remove each connection from our buddy
+                    #remove each connection from our buddy and from each person
                     del cache[str(connection.id)]
+                    del cache[str(host_member.id)]
 
                 await host_member.send("`Saving balance... " + str(victim['balance'] - ammount_toTake) + "`<:coin:592831769024397332>")
                 await host_member.send("[process completed]")
