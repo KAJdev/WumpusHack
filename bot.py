@@ -444,6 +444,8 @@ async def connect(ctx, ip : str = None):
 
 @bot.command(aliases=['dc'])
 async def disconnect(ctx):
+    if ctx.guild != None:
+        await ctx.message.delete()
     user = users_col.find_one({'user_id': str(ctx.author.id)})
     if user == None:
         await ctx.author.send("`Please type >login to start your adventure!`")
@@ -1061,8 +1063,10 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
 #Edit connection message
 @system.command()
 async def editcm(ctx, *, message = None):
+    if ctx.guild != None:
+        await ctx.message.delete()
     if message == None:
-        await ctx.send("<:bad:593862973274062883> `LOG: error in command 'editcm', no message provided.`")
+        await ctx.author.send("<:bad:593862973274062883> `LOG: error in command 'editcm', no message provided.`")
     else:
         user = users_col.find_one({'user_id': str(ctx.author.id)})
         if user == None:
@@ -1073,7 +1077,7 @@ async def editcm(ctx, *, message = None):
             return
         else:
             users_col.update_one({'user_id': str(ctx.author.id)}, { '$set': {'connect_msg': message }})
-            await ctx.send("`LOG: Updated connection message: %s`" % (message))
+            await ctx.author.send("`LOG: Updated connection message: %s`" % (message))
 
 
 @bot.command(name='print', aliases=['log'])
@@ -1163,20 +1167,22 @@ async def github(ctx):
 #Reset
 @bot.command()
 async def reset(ctx, user : discord.User = None):
+    if ctx.guild != None:
+        await ctx.message.delete()
     if user == None or ctx.author.id not in owner_ids:
         user = ctx.author
-    await ctx.send("`Are you sure you would like to reset?\nReseting will reset all of your stats [Y/N]`")
+    await ctx.author.send("`Are you sure you would like to reset?\nReseting will reset all of your stats [Y/N]`")
     try:
         while True:
             msg = await bot.wait_for('message', timeout= 10)
-            if "y" == msg.content.lower and msg.author.id == ctx.author.id:
+            if "y" == msg.content.lower and msg.author.id == ctx.author.id and msg.channel.id == breacher.dm_channel.id:
                 users_col.delete_one({'user_id': str(user.id)})
                 an_ip = str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255))
                 users_col.insert_one({'user_id': str(user.id), 'pc': basic_pc_stats, 'network': basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC."})
-                await ctx.send("`"+str(user) + "'s systems have been re-imaged.`")
+                await ctx.author.send("`"+str(user) + "'s systems have been re-imaged.`")
                 break
-            elif "n" == msg.content.lower and msg.author.id == ctx.author.id:
-                await ctx.send("`LOG: Reset canceled.`")
+            elif "n" == msg.content.lower and msg.author.id == ctx.author.id and msg.channel.id == breacher.dm_channel.id:
+                await ctx.author.send("`LOG: Reset canceled.`")
                 break
             else:
                 continue
@@ -1185,15 +1191,17 @@ async def reset(ctx, user : discord.User = None):
     except Exception as e:
         print(e)
         await message.delete()
-        await ctx.send("<:bad:593862973274062883> `No reply recived. Prompt expired.`")
+        await ctx.author.send("<:bad:593862973274062883> `No reply recived. Prompt expired.`")
         return
 
 
 #Command not found
 @bot.event
 async def on_command_error(ctx, error):
+    if ctx.guild != None:
+        await ctx.message.delete()
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
+        await ctx.author.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
 
 
 bot.loop.create_task(tick())
