@@ -1046,18 +1046,17 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
                 new_doc = users_col.update_one(their_doc, insert_doc)
                 await host_member.send("`Copying shared history...\nSaving history...truncating history files...`")
                 await host_member.send("`Completed\nDeleting expired sessions... 1 Completed`")
+                del cache[str(host_member.id)]
 
                 #get a list of connections to our buddy after the breach
                 connections = get_all_connections_to(doc['ip'])
                 for connection in connections:
                     print(str(connection))
-                    connector = users_col.find_one({'user_id': connection.id})
-                    #send dc msg to each person connected to our buddy and vise versa to our buddy.
-                    await host_member.send("`LOG: user "+ str(connection) + " ("+connector['ip']+") has disconnected from your network.`")
+                    #send dc msg to each person connected to our buddy.
                     await connection.send("`LOG: Lost connection to "+doc['ip']+"`")
                     #remove each connection from our buddy and from each person
                     del cache[str(connection.id)]
-                    del cache[str(host_member.id)]
+
 
                 await host_member.send("`Saving balance... " + str(victim['balance'] - ammount_toTake) + "`<:coin:592831769024397332>")
                 await host_member.send("[process completed]")
