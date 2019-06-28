@@ -425,10 +425,9 @@ async def connect(ctx, ip : str = None):
                 cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                 return
             if ip == 'bank.gov':
-                player = users_col.find_one({'user_id': ctx.author.id})
                 embed = discord.Embed(
                     title = "https://bank.gov",
-                    description = "Welcome to Bank.gov\n\nYour Balance:\n `" + player['balance'] + "`<:coin:592831769024397332>\n\n**Pay** - Send Money to other players:\n>pay <IP Address> <Amount>",
+                    description = "Welcome to Bank.gov\n\nYour Balance:\n `" + user['balance'] + "`<:coin:592831769024397332>\n\n**Pay** - Send Money to other players:\n>pay <IP Address> <Amount>",
                     color = 0x7289da
                 )
                 await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
