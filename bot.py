@@ -24,7 +24,7 @@ tick_number = 0
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1, 'cpu_name': "Intel Atom", 'gpu_name': "Integrated Graphics"}
 basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
-game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov']#
+game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov', 'wumpushack.com']#
 
 #categories
 categories = [Category.Maths, Category.Computers]
