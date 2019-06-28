@@ -32,7 +32,7 @@ categories = [Category.Maths, Category.Computers]
 difficulties = [Diffculty.Easy, Diffculty.Medium, Diffculty.Hard]
 
 owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
-help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disconnect** - Disconnects from another PC or Server.\n**System editcm <msg>** - Edits your connection message.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Ping** - Checks Bot's Ping.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n**Notify** - Toggles Email Notifications from mail.gov.\n\n**__Government websites__**\n**store.gov** - buy and upgrade your pc!\n**help.gov** - this network.\n**mail.gov** - see your inbox, and send messages."
+help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disconnect** - Disconnects from another PC or Server.\n**System editcm <msg>** - Edits your connection message.\n**Pay** - Pays an IP a set ammount of money from your account.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Ping** - Checks Bot's Ping.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n**Notify** - Toggles Email Notifications from mail.gov.\n\n**__Government websites__**\n**store.gov** - buy and upgrade your pc!\n**help.gov** - this network.\n**mail.gov** - see your inbox, and send messages."
 shop_string = "**__Network Upgrades__**\n**Firewall**\nCost - 50000 <:coin:592831769024397332>\n`Temporary 12 Hour Firewall blocking all connecions.`\n`ID - 1`\n\n**DDOS Protection**\nCost - 80000 <:coin:592831769024397332>\n`Adds extra time on math problems.`\n`ID - 2`\n\n**Bandwidth**\nCost - 1000 <:coin:592831769024397332>\n`Improves loading times and breach times.`\n`ID - 3`\n\n**__PC Upgrades__**\n**CPU**\nCost - 500 <:coin:592831769024397332>\n`Improves your CPU's Ghz by .5`\n`ID - 4`\n\n**GPU**\nCost - 600 <:coin:592831769024397332>\n`Improves your GPU's Ghz by .3`\n`ID - 5`\n\n**RAM**\nCost - 500 <:coin:592831769024397332>\n`Improves RAM by 1GB`\n`ID - 6`"
 
 shop_items = [{'name': "GTX 1060", 'type': 'gpu', 'system': 5, 'cost': 50000}, {'name': "AMD Athlon II X3", 'type': 'cpu', 'system': 2, 'cost': 15000}, {'name': "Intel core i3", 'type': "cpu", 'system': 4, 'cost': 15000}, {'name': "4GB RAM Stick", 'type': 'ram', 'system': 4, 'cost': 40000}, {'name': "8GB RAM Stick", 'type': 'ram', 'system': 8, 'cost': 90000}, {'name': "16GB RAM Stick", 'type': 'ram', 'system': 16, 'cost': 200000}, {'name': "Intel core i5", 'type': "cpu", 'system': 5, 'cost': 35000}, {'name': "Intel core i7", 'type': "cpu", 'system': 6, 'cost': 50000}, {'name': "Intel Xeon", 'type': "cpu", 'system': 9, 'cost': 200000}, {'name': "AMD Threadripper", 'type': "cpu", 'system': 9, 'cost': 190000}, {'name': "AMD Radeon RX 580", 'type': 'gpu', 'system': 6, 'cost': 140000}, {'name': "Nvidia GeForce GTX 1070", 'type': 'gpu', 'system': 7, 'cost': 170000}, {'name': "Nvidia GeForce RTX 2080 Ti", 'type': 'gpu', 'system': 10, 'cost': 250000}]
@@ -674,7 +674,33 @@ async def send(ctx, mail_to:str=None, *, msg:str=None):
         else:
             await ctx.author.send("`LOG: (mail.gov) email does not exist`")
 
-
+#Pay Command
+@bot.command
+async def pay(ctx, *, ip: str = None, amount: int = None):
+    author = users_col.find_one({'user_id': str(ctx.author.id)})
+    user = users_col.find_one({'ip': ip})
+    user_member = discord.utils.get(bot.get_all_members(), id = int(user['user_id']))
+    if ctx.guild != None:
+        await ctx.message.delete()
+    if author == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+    if author['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    if amount > user['balance']:
+        await ctx.author.send("`LOG: Insufficient Funds`")
+        return
+    if user == None:
+        await ctx.author.send("`LOG: User not found.`")
+        return
+    if amount <= 0:
+        await ctx.author.send("`LOG: Amount must be above 0`")
+        return
+    users_col.update_one(author, {'$set': {'balance': author['balance'] - amount}})
+    users_col.update_one(user, {'$set': {'balance': author['balance'] + amount}})
+    await ctx.author.send("`LOG: Sent ("+ ip + ") " + amount + "`<:coin:592831769024397332>")
+    await user_member.send("`LOG: You have recived " + amount + "`<:coin:592831769024397332>`From: " + str(ctx.author) + "`")
 
 @bot.event
 async def on_message(message):
