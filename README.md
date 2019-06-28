@@ -102,7 +102,7 @@ SOFTWARE.
 [License](https://github.com/KAJdev/WumpusHack/blob/master/LICENSE).
 
 ## Personal
-You can do all these steps to run your own instance of WUmpusHack, or join a server with the Official bot and get right to hacking!
+You can do all these steps to run your own instance of WumpusHack, or join a server with the Official bot and get right to hacking!
 [official discord server](https://discord.gg/m75eCse)
 
 1. Make sure you have python 3.6+
@@ -112,3 +112,4 @@ You can do all these steps to run your own instance of WUmpusHack, or join a ser
 5. Fill out the config.py, with a bot token, Mongo URI, prefix, and tick speed
 6. open terminal, navigate to the directory with the bot, (cd <folder name>) and type `py bot.py`
 7. add your bot account to a server, and start hacking away!
+8. Although remember, you wont be able to hack anyone outside your server (Not Global with the Actual Bot)
