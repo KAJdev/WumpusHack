@@ -263,7 +263,7 @@ async def login(ctx):
         if str(ctx.author.id) in cache.keys():
             del cache[str(ctx.author.id)]
         embed = discord.Embed(
-            title = "Welcome to Wumpus Inc. family!",
+            title = "Welcome to WumpOS Inc. family!",
                 description = "`Thank you for purchasing your new Wumpus system. Your Wumpus system is the way you can communicate with the world! Your computer is started, and ready to roll! Connect to your nation's help system to get the hang of things.` (>connect help.gov)",
             color = 0x35363B
         )
@@ -284,7 +284,7 @@ async def login(ctx):
         print('User '+str(ctx.author.id)+ " is now Online")
         await asyncio.sleep(calc_loading(doc, 5))
         await msg.edit(content="<:done:592819995843624961> `Welcome back, %s, to your Wumpus System.`" % (str(ctx.author)))
-        await ctx.author.send("**```Wumpus OS [Version "+version+"]\n(c) 2019 Discord Inc. All rights reserved.\n\nC:\\Users\\%s>```**" % (str(ctx.author)))
+        await ctx.author.send("**```WumpOS [Version "+version+"]\n(c) 2019 Discord Inc. All rights reserved.\n\nC:\\Users\\%s>```**" % (str(ctx.author)))
 
 #Logout bs
 @bot.command()
@@ -415,6 +415,16 @@ async def connect(ctx, ip : str = None):
                 await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
                 cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                 return
+            if ip == 'wumpushack.com':
+                embed = discord.Embed(
+                    title = "**Coming Soon! 🔗**",
+                    url = "http://wumpushack.com",
+                    color = 0x7289da
+                )
+                await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
+                cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
+                return
+                
         doc = users_col.find_one({'ip': ip})
         if doc != None:
             test_member = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
