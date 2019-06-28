@@ -2,7 +2,7 @@
 print('Importing Libraries')
 import discord, pymongo, config, asyncio, random, dns, json, math, time, importlib, sys
 before_startup = time.time()
-from discord.ext import commands
+from discord.ext import commands, tasks
 from datetime import datetime
 from pytrivia import Category, Diffculty, Type, Trivia
 
@@ -31,6 +31,8 @@ class main_commands(commands.Cog):
         self.cache = {'away': {}}
         self.version = "2019.2.1.20b"
         self.tick_number = 0
+
+        self.tick.start()
 
         self.help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disconnect** - Disconnects from another PC or Server.\n**System editcm <msg>** - Edits your connection message.\n**Pay** - Pays an IP a set ammount of money from your account.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Ping** - Checks self.bot's Ping.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n**Notify** - Toggles Email Notifications from mail.gov.\n\n**__Government websites__**\n**store.gov** - buy and upgrade your pc!\n**help.gov** - this network.\n**mail.gov** - see your inbox, and send messages.\n**bank.gov** - see your balance and send money to people."
         self.shop_items = config.shop_items
@@ -131,7 +133,6 @@ class main_commands(commands.Cog):
         #Yay more stats
         print("Bot is ready and online.")
         print("Servers: %s, Ping: %s ms, Startup time: %s seconds" % (len(self.bot.guilds), self.bot.latency * 1000, str(round(time.time() - before_startup, 2))))
-        await self.tick()
 
 
     @commands.command(name="debug")
@@ -160,23 +161,28 @@ class main_commands(commands.Cog):
         print("Updated %s online users in %s seconds" % (updated_count, str(round(difference, 1))))
 
     #The base tick of the bot. controls how many times mine() gets called, and the times in between checking for cooldowns
+    @tasks.loop(seconds=config.TICK_SPEED)
     async def tick(self):
-        #Make sure self.bot is started
-        await asyncio.sleep(5)
-        while not self.bot.is_closed():
-            await asyncio.sleep(config.TICK_SPEED)
-            before = time.time()
-            self.tick_number += 1
-            print("TICK " + str(self.tick_number))
-            if self.bot != None:
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=">login | %s users online | Tick %s" % (self.users_col.find({'online': True}).count(), str(self.tick_number))))
+        before = time.time()
+        if self.bot != None:
+            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=">login | %s online | Tick %s" % (self.users_col.find({'online': True}).count(), str(self.tick_number))))
+        self.tick_number += 1
+        print("TICK " + str(self.tick_number))
 
-            self.mine()
-            await self.check_timer_firewall()
-            await self.check_timer_breach_cooldown()
-            if round(time.time() - before, 1) > 5:
-                print("ERROR | Tick took too long (%s seconds)" % (str(round(time.time() - before, 1))))
-            print("")
+        self.mine()
+        await self.check_timer_firewall()
+        await self.check_timer_breach_cooldown()
+        if round(time.time() - before, 1) > 5:
+            print("ERROR | Tick took too long (%s seconds)" % (str(round(time.time() - before, 1))))
+        print("")
+
+    @tick.before_loop
+    async def before_tick(self):
+        print('waiting...')
+        await self.bot.wait_until_ready()
+
+    def cog_unload(self):
+        self.tick.cancel()
 
 
     #Calculates Loading for Stuff
@@ -198,11 +204,11 @@ class main_commands(commands.Cog):
                 return 15
         if doc['network']['ddos_pro'] == False:
             if specs >= 25:
-                return 30
+                return 20
             if specs < 25 and specs > 15:
-                return 25
-            if specs < 15 and specs > 3:
                 return 15
+            if specs < 15 and specs > 3:
+                return 10
             if specs < 5 and specs >= 3:
                 return 10
 
@@ -222,11 +228,12 @@ class main_commands(commands.Cog):
             if str(ctx.author.id) in self.cache.keys():
                 del self.cache[str(ctx.author.id)]
             embed = discord.Embed(
-                title = "Welcome to WumpOS Inc. family!",
-                description = "`Thank you for purchasing your new Wumpus system. Your Wumpus system is the way you can communicate with the world! Your computer is started, and ready to roll! Connect to your nation's help system to get the hang of things.` (>connect help.gov)",
+                title = "Welcome to the WumpOS Inc. family!",
+                description = "Thank you for purchasing your new Wumpus system. Your Wumpus system is the way you can communicate with the world! Your computer is started, and ready to roll! Connect to your nation's help system to get the hang of things. \n(>connect help.gov)\n\nYour PC currently has pretty lame parts. Don't you want a god PC? Well first things first, you need money. Why don't you hack into some people by first getting their IP using `>scan`, and then connecting to them using `>connect <ip>`. After that, you can start a breach using `>breach`. If you can win, then you can steal some of their cash!\n\nWhen you have some cash, try visiting the the store (`>connect store.gov`) and looking at what is available that day. Taking a look at the bank is a good idea as well. Oh, and dont forget to check your mail!",
                 color = 0x35363B
             )
             await ctx.author.send(embed=embed)
+            await ctx.author.send("**```WumpOS [version "+self.version+"]\n(c) 2019 Discord Inc. All rights reserved.\n\nC:\\Users\\%s>```**" % (str(ctx.author)))
 
             #Randomly generate an IP address
             an_ip = str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255))
@@ -257,7 +264,7 @@ class main_commands(commands.Cog):
 
             #Neat. your in
             await msg.edit(content="<:done:592819995843624961> `Welcome back, %s, to your Wumpus System.`" % (str(ctx.author)))
-            await ctx.author.send("**```WumpOS [self.version "+self.version+"]\n(c) 2019 Discord Inc. All rights reserved.\n\nC:\\Users\\%s>```**" % (str(ctx.author)))
+            await ctx.author.send("**```WumpOS [version "+self.version+"]\n(c) 2019 Discord Inc. All rights reserved.\n\nC:\\Users\\%s>```**" % (str(ctx.author)))
 
     #Logout commando
     @commands.command()
@@ -1102,20 +1109,20 @@ class main_commands(commands.Cog):
             del self.cache[str(breacher.id)]
             del self.cache[str(host_member.id)]
 
-            #send a ton of stuff with information about end of breach
+            #Send a ton of stuff with information about end of breach
             await breacher.send("`BREACH FAILED: (You did not answer the Trivia problem in time, the breach has failed.)`")
             await host_member.send("`BREACH BLOCKED: (The breach has been stopped by your defenses)`")
             await breacher.send("`INFO: A Cooldown for Breaching has been set on your account for 10 minutes.`")
             await host_member.send("`LOG: %s has been disconnected.`" % (user['ip']))
             await breacher.send("`LOG: %s has disconnected you from their network.`" % (host_doc['ip']))
 
-            #add cooldown
+            #Add cooldown
             hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
             givecooldown = self.users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)
 
 
     async def breach_host(self, host_member, host_doc, ctx, user, breacher):
-        #ok now back to the breacher guy. this function is identical to the last, except for which side its for.
+        #Ok now back to the breacher guy. this function is identical to the last, except for which side its for.
         bypassed = False
         catstring, all_a, question, answer = self.get_random_q_a()
         print(answer)
@@ -1144,7 +1151,7 @@ class main_commands(commands.Cog):
             await self.breach_starter(host_member, host_doc, ctx, user, breacher)
 
         if bypassed == False:
-            #they breached it! take the money, and logout the breached persons PC to prevent them from being hacked again
+            #They breached it! Take the money, and logout the breached persons PC to prevent them from being hacked again
             await host_member.send("`DEFENSE FAILED: (You did not answer the Trivia question in time, your computer is compromized.)`")
             await breacher.send("`BREACH SUCCESFUL: (You have compromized the host's Computer, 1/4th of their funds will be moved into your account.)`")
             hacker = self.users_col.find_one({'user_id': str(breacher.id)})#Gets Hackers Document
@@ -1161,7 +1168,7 @@ class main_commands(commands.Cog):
             newhacker = self.users_col.update_one(hacker, hackers_newFunds)
             await host_member.send("`BREACH: "+str(ammount_toTake)+"`<:coin:592831769024397332>` has been taken from your account.` ")
             await breacher.send("`BREACH: "+str(ammount_toTake)+"`<:coin:592831769024397332>` has been tranferred to your account.` ")
-            #redoes logout to stop more hacking to 1 user
+            #Redoes logout to stop more hacking to 1 user
 
 
             doc = victim
@@ -1176,18 +1183,18 @@ class main_commands(commands.Cog):
                     await host_member.send("`Completed\nDeleting expired sessions... 1 Completed`")
                     del self.cache[str(host_member.id)]
 
-                    #get a list of connections to our buddy after the breach
+                    #Get a list of connections to our buddy after the breach
                     connections = self.get_all_connections_to(doc['ip'])
                     for connection in connections:
                         print(str(connection))
-                        #send dc msg to each person connected to our buddy.
+                        #Send dc msg to each person connected to our buddy.
                         await connection.send("`LOG: Lost connection to "+doc['ip']+"`")
-                        #remove each connection from our buddy and from each person
+                        #Remove each connection from our buddy and from each person
                         del self.cache[str(connection.id)]
 
 
                     await host_member.send("`Saving balance... " + str(victim['balance'] - ammount_toTake) + "`<:coin:592831769024397332>")
-                    await host_member.send("[process completed]")
+                    await host_member.send("[Process completed]")
                     print(str(host_member.id) + " is now offline")
                 else:
                     await host_member.send("`Your computer is not online. Please >login`")
@@ -1202,11 +1209,11 @@ class main_commands(commands.Cog):
     #Edit connection message
     @system.command()
     async def editcm(self, ctx, *, message = None):
-        #simple command to edit what peopel see when they connect to you
+        #Simple command to edit what people see when they connect to you
         if ctx.guild != None:
             await ctx.message.delete()
         if message == None:
-            await ctx.author.send("<:bad:593862973274062883> `LOG: error in command 'editcm', no message provided.`")
+            await ctx.author.send("<:bad:593862973274062883> `LOG: Error in command 'editcm', no message provided.`")
         else:
             user = self.users_col.find_one({'user_id': str(ctx.author.id)})
             if user == None:
@@ -1222,7 +1229,7 @@ class main_commands(commands.Cog):
 
     @commands.command(name='print', aliases=['log', 'pr'])
     async def _print(self, ctx, *, msg:str=None):
-        #prints messages to peoples consoles. If your connected to a User, and not in a breach, you can log to their PC, meaning send msgs back and forth
+        #Prints messages to peoples consoles. If your connected to a User, and not in a breach, you can log to their PC, meaning send msgs back and forth
         if ctx.guild != None:
             await ctx.message.delete()
         user = self.users_col.find_one({'user_id': str(ctx.author.id)})
@@ -1233,37 +1240,37 @@ class main_commands(commands.Cog):
             await ctx.author.send("`Your computer is not online. Please >login`")
             return
 
-        #cant send ""
+        #Cant send ""
         if msg == None:
-            await ctx.author.send("<:bad:593862973274062883> `error in command \'print\'. A message must be provided.`")
+            await ctx.author.send("<:bad:593862973274062883> `Error in command \'print\'. A message must be provided.`")
             return
 
-        #check if anyone is connected to them, and send message
+        #Check if anyone is connected to them, and send message
         if str(ctx.author.id) not in self.cache.keys():
-            #search through all connections
+            #Search through all connections
             for key, value in self.cache.items():
                 if key == 'away':
                     continue
 
-                #if IPs match
+                #If IPs match
                 if value['host'] == user['ip']:
-                    #get user
+                    #Get user
                     host_user = discord.utils.get(self.bot.get_all_members(), id=int(key))
                     if host_user != None:
-                        #send message
+                        #Send message
                         await host_user.send("`LOG: ("+value['host']+") "+msg+"`")
 
             await ctx.author.send("`LOG: ("+user['ip']+") "+msg+"`")
 
         else:
-            #check if they are connected to anyone and send message AND if anyone is connected to them
+            #Check if they are connected to anyone and send message AND if anyone is connected to them
             doc = self.users_col.find_one({'ip': self.cache[str(ctx.author.id)]['host']})
             if doc != None:
-                #search through all connections
+                #Search through all connections
                 for key, value in self.cache.items():
                     if key == 'away':
                         continue
-                    #matching IPs awww <3
+                    #Matching IPs awww <3
                     if value['host'] == doc['ip']:
                         host_user = discord.utils.get(self.bot.get_all_members(), id=int(key))
                         if host_user.id == ctx.author.id:
