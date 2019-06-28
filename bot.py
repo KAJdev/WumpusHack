@@ -1080,7 +1080,7 @@ async def editcm(ctx, *, message = None):
             await ctx.author.send("`LOG: Updated connection message: %s`" % (message))
 
 
-@bot.command(name='print', aliases=['log'])
+@bot.command(name='print', aliases=['log', 'pr'])
 async def _print(ctx, *, msg:str=None):
     if ctx.guild != None:
         await ctx.message.delete()
