@@ -225,11 +225,12 @@ async def tick():
         print("")
 
 
-#Ca
+#Calculates Loading for Stuff
 def calc_loading(doc, base):
     load_time = base / ((doc['network']['bandwidth'] * doc['pc']['cpu']) + 1)
     return load_time
-    
+
+#calculates time for trivia questions
 def calc_time(doc):
     specs = (doc['pc']['cpu'] + doc['pc']['ram'] + doc['pc']['gpu'])
     if doc['network']['ddos_pro'] == True:
@@ -268,7 +269,7 @@ async def login(ctx):
         )
         await ctx.author.send(embed=embed)
         an_ip = str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255))
-        user = {'user_id': str(ctx.author.id), 'pc': basic_pc_stats, 'network': basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False, 'email': ctx.author.name.lower() + "@hackweek.com"}
+        user = {'user_id': str(ctx.author.id), 'pc': basic_pc_stats, 'network': basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False, 'email': ctx.author.name.lower() + "@hackweek.com", 'notify': False}
         print('inserting...')
         users_col.insert_one(user)
         print('created user')
@@ -645,10 +646,23 @@ async def send(ctx, mail_to:str=None, *, msg:str=None):
         await ctx.author.send("`LOG: (mail.gov) Please specify a message to send`")
         return
     else:
-        email = user['email']
-        mail_doc = {'to': mail_to, 'from': email, 'content': msg}
-        mail_col.insert_one(mail_doc)
-        await ctx.author.send("`LOG: (mail.gov) email has been sent.`")
+        reciver = users_col.find_one({'email': mail_to})
+        if reciver != None:
+            email = user['email']
+            mail_doc = {'to': mail_to, 'from': email, 'content': msg}
+            mail_col.insert_one(mail_doc)
+            await ctx.author.send("`LOG: (mail.gov) email has been sent.`")
+            recivernotif = reciver['notify']
+            if recivernotif == False:
+                return
+            else:
+                emailperson = discord.utils.get(bot.get_all_members(), id= int(reciver['user_id']))
+                if emailperson != None:
+                    await emailperson.send("`LOG: (mail.gov) You've Got Mail`")
+        else:
+            await ctx.author.send("`LOG: (mail.gov) email does not exist`")
+
+
 
 @bot.event
 async def on_message(message):
@@ -811,6 +825,27 @@ async def system(ctx):
             msg = await ctx.author.send("<a:loading2:592819419604975797> `Obtaining system information...`")
             await asyncio.sleep(calc_loading(doc, 5))
             await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
+
+@system.command()
+async def notify(ctx):
+    if ctx.guild != None:
+        await ctx.message.delete()
+
+    user = users_col.find_one({'user_id': str(ctx.author.id)})
+    if user == None:
+        await ctx.author.send("`Please type >login to start your adventure!`")
+        return
+
+    if user['online'] == False:
+        await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+
+    if 'notify' not in user.keys():
+        users_col.update_one(user, {'$set': {'notify': True}})
+        await ctx.author.send("`LOG: Notifications are now set to: True`")
+    else:
+        users_col.update_one(user, {'$set': {'notify': not user['notify']}})
+        await ctx.author.send("`LOG: Notifications are now set to: %s`" % (str(not user['notify'])))
 
 #Generates Random Number
 def randomNumber():
