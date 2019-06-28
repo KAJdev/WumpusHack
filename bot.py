@@ -813,7 +813,13 @@ async def system(ctx):
             sys_string = "**__Computer Information__**\n**RAM** - "+str(doc['pc']['ram'])+ " GB\n**CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n**GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n**Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
             if str(ctx.author.id) in cache.keys():
-                sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False"
+                host_email = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
+                if cache[str(ctx.author.id)]['type'] == 1:
+                    sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False\n**Host's Email** - "+str(host_email['email'])
+                elif cache[str(ctx.author.id)]['type'] == 2:
+                    sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']
+                else:
+                    sys_string = sys_string
 
             if doc['breach'] != False and doc['breach'] != True:
                 breach_time = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(round(float(doc['breach'])  - time.time())))
