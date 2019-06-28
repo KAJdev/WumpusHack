@@ -225,19 +225,12 @@ async def tick():
         print("")
 
 
-
+#Ca
 def calc_loading(doc, base):
-    specs = (doc['pc']['cpu'] + doc['pc']['ram'] + doc['network']['bandwidth'])
-    if specs > 30:
-        return 1
-    if specs > 20 and specs < 30:
-        return 3
-    if specs > 10 and specs < 20:
-        return 5
-    if specs > 0 and specs < 10:
-        return 8
-
-def calc_time(doc, base):
+    load_time = base / ((doc['network']['bandwidth'] * doc['pc']['cpu']) + 1)
+    return load_time
+    
+def calc_time(doc):
     specs = (doc['pc']['cpu'] + doc['pc']['ram'] + doc['pc']['gpu'])
     if doc['network']['ddos_pro'] == True:
         if specs >= 25:
@@ -903,8 +896,9 @@ def get_random_q_a():
 async def breach_starter(host_member, host_doc, ctx, user, breacher):
     bypassed = False
     catstring, all_a, question, answer = get_random_q_a()
+    doc = user
     print(answer)
-    time_ = calc_time(user, 1.5)
+    time_ = calc_time(doc)
     await breacher.send("`RETALIATION: ("+host_doc['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\n You have %s seconds, or the breach fails`" % (str(time_)))
     correct = False #Does Trivia Stuff
     while correct == False:
@@ -945,7 +939,8 @@ async def breach_host(host_member, host_doc, ctx, user, breacher):
     bypassed = False
     catstring, all_a, question, answer = get_random_q_a()
     print(answer)
-    time_ = calc_time(host_doc, 1.5)
+    doc = host_doc
+    time_ = calc_time(doc)
     await host_member.send("`BREACH: ("+user['ip']+") "+str(question)+"\n\nYour Choices:\n"+ str(all_a)+ "\n\n You have %s seconds, or 1/4th of your Funds are taken.`" % (str(time_)))
     correct = False #Does Trivia Stuff
     while correct == False:
@@ -1164,8 +1159,6 @@ async def reset(ctx, user : discord.User = None):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         await ctx.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
-    else:
-        raise error
 
 
 bot.loop.create_task(tick())
