@@ -191,9 +191,12 @@ async def on_ready():
 
 @bot.command(name="debug")
 async def _debug():
+    if ctx.author.id not in owner_ids:
+        return
+        
     global debug_status
     debug_status = not debug_status
-    ctx.send("`Updated debug status to be`" + str(debug_status))
+    ctx.author.send("`Updated debug status to be`" + str(debug_status))
 
 @bot.event
 async def on_guild_join(guild):
@@ -691,9 +694,9 @@ async def send(ctx, mail_to:str=None, *, msg:str=None):
         else:
             await ctx.author.send("`LOG: (mail.gov) email does not exist`")
 
-#Pay Command
+#Pay Command Larvey Dumb
 @bot.command
-async def pay(ctx, *, ip: str = None, amount: int = None):
+async def pay(ctx, ip: str = None, amount: int = None):
     author = users_col.find_one({'user_id': str(ctx.author.id)})
     user = users_col.find_one({'ip': ip})
     user_member = discord.utils.get(bot.get_all_members(), id = int(user['user_id']))
@@ -856,31 +859,36 @@ async def system(ctx):
         if ctx.guild != None:
             await ctx.message.delete()
 
+        #get user docuemnt from DB and check if they have an account
         doc = users_col.find_one({'user_id': str(ctx.author.id)})
         if doc == None:
             await ctx.author.send("`Please type >login to start your adventure!`")
             return
 
+        #check for online status
         if doc['online'] == False:
             await ctx.author.send("`Your computer is not online. Please >login`")
             return
 
         else:
+            #display firewall cooldown if active
             if doc['network']['firewall'] != False:
                 firewall_time = round(float(doc['network']['firewall'])  - time.time())
                 doc['network']['firewall'] = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(firewall_time))
 
+            #base system display with PC specs and such
             sys_string = "**__Computer Information__**\n**RAM** - "+str(doc['pc']['ram'])+ " GB\n**CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n**GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n**Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
             if str(ctx.author.id) in cache.keys():
+                #grab hosts info to display
                 host_email = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
-                if cache[str(ctx.author.id)]['type'] == 1:
-                    sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']+"\n**Admin** - False\n**Host's Email** - "+str(host_email['email'])
-                elif cache[str(ctx.author.id)]['type'] == 2:
-                    sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']
-                else:
-                    sys_string = sys_string
+                sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+cache[str(ctx.author.id)]['host']
 
+                # show email if connected to PC
+                if cache[str(ctx.author.id)]['type'] == 1 and host_email != None:
+                    sys_string = sys_string + "\n**Host's Email** - "+str(host_email['email'])
+
+            #show breach duration if they have a cooldown active
             if doc['breach'] != False and doc['breach'] != True:
                 breach_time = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(round(float(doc['breach'])  - time.time())))
                 sys_string = sys_string + "\n\n**Breach Cooldown** - " + breach_time
@@ -890,6 +898,7 @@ async def system(ctx):
                 description = sys_string,
                 color = 0x7289da
             )
+            #send message
             msg = await ctx.author.send("<a:loading2:592819419604975797> `Obtaining system information...`")
             await asyncio.sleep(calc_loading(doc, 5))
             await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
@@ -944,10 +953,18 @@ async def breach(ctx):
             return
         #check for cooldown
 
+
         host_doc = users_col.find_one({'ip': cache[str(ctx.author.id)]['host']})
         if host_doc != None:
             host_member = discord.utils.get(bot.get_all_members(), id=int(host_doc['user_id']))
             if host_member != None:
+
+                #Checks if host is already being breached
+                if str(host_member.id) in cache.keys():
+                    if cache[str(host_member.id)]['type'] == 4:
+                        await ctx.author.send("`LOG: error sending breach packets`")
+                        return
+
                 cache[str(host_member.id)] = {'status': False, 'type': 4, 'host': "**BREACH**"}
                 breacher = ctx.author
                 hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
