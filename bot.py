@@ -1,6 +1,6 @@
 #Imports
 print('Importing Libraries')
-import discord, pymongo, config, asyncio, random, dns, json, math, time, importlib
+import discord, pymongo, config, asyncio, random, dns, json, math, time, importlib, sys
 before_startup = time.time()
 from discord.ext import commands
 from datetime import datetime
