@@ -1259,7 +1259,7 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         await ctx.author.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
     else:
-        print(sys.exc_info()[0])
+        raise error
 
 
 bot.loop.create_task(tick())
