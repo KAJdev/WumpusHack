@@ -60,8 +60,6 @@ Wumpus Hack has been developed by a team of four people.
 
 `Ping` - Gets Bots Ping
 
-`Pay` - Pay another member using Pay {IP} {Amount}.
-
 
 ### Government websites
 
@@ -70,6 +68,8 @@ Wumpus Hack has been developed by a team of four people.
 `help.gov` - this network.
 
 `mail.gov` - see your inbox, and send messages.
+
+`bank.gov` - send Money to Players.
 
 
 ## Configuration options

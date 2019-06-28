@@ -24,7 +24,7 @@ tick_number = 0
 #Defaults
 basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1, 'cpu_name': "Intel Atom", 'gpu_name': "Integrated Graphics"}
 basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
-game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov', 'wumpushack.com']#
+game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov', 'wumpushack.com', 'bank.gov']#
 
 #categories
 categories = [Category.Maths, Category.Computers]
@@ -424,7 +424,16 @@ async def connect(ctx, ip : str = None):
                 await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
                 cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                 return
-
+            if ip == 'bank.gov':
+                player = users_col.find_one({'user_id': ctx.author.id})
+                embed = discord.Embed(
+                    title = "https://bank.gov",
+                    description = "Welcome to Bank.gov\n\nYour Balance:\n `" + player['balance'] + "`<:coin:592831769024397332>\n\n**Pay** - Send Money to other players:\n>pay <IP Address> <Amount>",
+                    color = 0x7289da
+                )
+                await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
+                cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
+                return
         doc = users_col.find_one({'ip': ip})
         if doc != None:
             test_member = discord.utils.get(bot.get_all_members(), id=int(doc['user_id']))
@@ -687,6 +696,12 @@ async def pay(ctx, *, ip: str = None, amount: int = None):
         return
     if author['online'] == False:
         await ctx.author.send("`Your computer is not online. Please >login`")
+        return
+    if str(ctx.author.id) not in cache:
+        raise commands.CommandNotFound
+        return
+    elif cache[str(ctx.author.id)]['host'] != 'bank.gov':
+        raise commands.CommandNotFound
         return
     if amount > user['balance']:
         await ctx.author.send("`LOG: Insufficient Funds`")
