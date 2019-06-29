@@ -24,19 +24,6 @@ Wumpus Hack has been developed by a team of four people.
 | Larvey#0001 | Programmer |
 | Ita Ash#8916 | Graphic Designer |
 
-1.) Polar#5893
--Programmer
-
-2.) KAJ7#0001
--Programmer
-
-3.) Larvey#0001
--Programmer
-
-4.) Ita Ash#8916
--Graphic Designer
-
-
 ## Commands
 #### All these commands are used in a DM with the bot, if not, msgs will be sent to DMs
 `Connect` - Connects to another PC.
