@@ -517,7 +517,7 @@ class main_commands(commands.Cog):
             return
         #Calls for loading time
         time_ = self.calc_loading(user, 120)
-        msg = await ctx.author.send("<a:loading2:592819419604975797> `Scraping for IP addresses. ( This will take around %s Minute(s) )`" % round(time_ / 60))
+        msg = await ctx.author.send("<a:loading2:592819419604975797> `Scraping for IP addresses. ( This will take around %s Second(s) )`" % round(time_))
 
         #Set connection so they cant do other stuff
         self.cache[str(ctx.author.id)] = {'status': True, 'type': 3, 'host': "using network card to scan for IPs"}
@@ -541,13 +541,17 @@ class main_commands(commands.Cog):
         doc = None
 
         #Make sure you get an IP hats not yours
-        while True:
-            doc = self.users_col.find({'online': True})
-            doc = doc[random.randrange(doc.count()) - 1]
-            if doc['user_id'] == user['user_id']:
-                continue
-            else:
-                break
+        try:
+            while True:
+                doc = self.users_col.find({'online': True})
+                doc = doc[random.randrange(doc.count()) - 1]
+                if doc['user_id'] == user['user_id']:
+                    continue
+                else:
+                    break
+        except:
+            await msg.edit(content="<:done:592819995843624961> `Scrape returned (0) addresses`")
+            return
 
         #Let the user know
         await msg.edit(content="<:done:592819995843624961> `Scrape returned (1) address: %s`" % (doc['ip']))
@@ -642,7 +646,7 @@ class main_commands(commands.Cog):
             await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to Network`")
             return
         else:
-            #R u sureeee???
+            #R u surreeeee?
             await ctx.author.send("`LOG: (mail.gov) Are you sure you want toclear your inbox? Respond with 'Y' or 'N'`")
 
             #Makes infinite loop so that they can make SURE that they want to clear their beloved inbox
@@ -980,7 +984,7 @@ class main_commands(commands.Cog):
         if user == None:
             await ctx.author.send("`Please type >login to start your adventure!`")
             return
-# can u go to bot.py i need to link
+
         if user['online'] == False:
             await ctx.author.send("`Your computer is not online. Please >login`")
             return
