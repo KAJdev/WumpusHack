@@ -643,7 +643,7 @@ class main_commands(commands.Cog):
             return
         else:
             #R u sureeee???
-            await ctx.author.send("`LOG: (mail.gov) Are you sure you want toclear your inbox? Respond with 'Y' or 'N'")
+            await ctx.author.send("`LOG: (mail.gov) Are you sure you want toclear your inbox? Respond with 'Y' or 'N'`")
 
             #Makes infinite loop so that they can make SURE that they want to clear their beloved inbox
             while True:
@@ -739,7 +739,7 @@ class main_commands(commands.Cog):
 
     #Pay Command
     @commands.command()
-    async def pay(self, ctx, email:str=None, amount:int=None):
+    async def pay(self, ctx, email:str=None, amount:float=None):
         #Grabs all profiles needed for this command
         author = self.users_col.find_one({'user_id': str(ctx.author.id)})
         user = self.users_col.find_one({'email': email})
@@ -777,6 +777,8 @@ class main_commands(commands.Cog):
         if amount <= 1:
             await ctx.author.send("`LOG: (bank.gov) Amount must be above 1`")
             return
+
+
         #Take from one, and give to the other. Notify self.both parties.
         user_member = discord.utils.get(self.bot.get_all_members(), id = int(user['user_id']))
 
@@ -943,7 +945,7 @@ class main_commands(commands.Cog):
                     doc['network']['firewall'] = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(firewall_time))
 
                 #Base system display with PC specs and such
-                sys_string = "**__Computer Information__**\n**RAM** - "+str(doc['pc']['ram'])+ " GB\n**CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n**GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n**Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
+                sys_string = "**__Computer Information__**\n**RAM** - "+str(doc['pc']['ram'])+ " GB\n**CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n**GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n**Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(round(doc['balance']))+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
                 if str(ctx.author.id) in self.cache.keys():
                     #Grab hosts info to display
@@ -978,7 +980,7 @@ class main_commands(commands.Cog):
         if user == None:
             await ctx.author.send("`Please type >login to start your adventure!`")
             return
-
+# can u go to bot.py i need to link
         if user['online'] == False:
             await ctx.author.send("`Your computer is not online. Please >login`")
             return
