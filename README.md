@@ -1,9 +1,12 @@
 # Wumpus Hack
 ![wumpus](https://cdn.discordapp.com/attachments/594036341810135040/594036466347278352/wumpusos-removebg-preview_1.png)
 
-Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of discord. The bot simulates an operating system for each user called WumpOS. With WumpOS, you can send email, Buy PC parts, set up firewalls, mine crypto currency, connect to other user's PCs, hack other people's PCs, and steal their money, leave funny messages on your friend's PC, and much more. [Join the official WumpusHack Discord server](https://discord.gg/m75eCse)
+Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of discord. The bot simulates an operating system for each user called WumpOS. With WumpOS, you can send email, Buy PC parts, set up firewalls, mine crypto currency, connect to other user's PCs, hack other people's PCs, and steal their money, leave funny messages on your friend's PC, and much more.
 
-# You can invite the bot with [this link](https://discordapp.com/api/oauth2/authorize?client_id=592803813593841689&permissions=8&scope=bot)
+# Important Links 
+**[Bot Invite](http://wumpushack.com/)**
+
+**[Support Server](https://discord.gg/m75eCse)**
 
 # Table of contents
 - [Team](#Team)
