@@ -4,6 +4,8 @@ import discord
 class utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot.remove_command('help')
+
 
     #Invite
     @commands.command()
@@ -11,7 +13,7 @@ class utils(commands.Cog):
         #send link to invite the bot to your server
         embed = discord.Embed(
             title = "**Invite Me! 🔗**",
-            url = "https://discordapp.com/api/oauth2/authorize?client_id=592803813593841689&permissions=8&scope=self.bot",
+            url = "http://wumpushack.com",
             color = 0x7289da
         )
         await ctx.send(embed = embed)
@@ -40,6 +42,17 @@ class utils(commands.Cog):
         embed = discord.Embed(
             title = "**Github Repository! 🔗**",
             url = "https://github.com/KAJdev/WumpusHack",
+            color = 0x7289da
+        )
+        await ctx.send(embed = embed)
+
+    #Website
+    @commands.command(aliases=['site', 'dash', 'domain', 'link', 'dashboard', 'leaderboards', 'top'])
+    async def website(self, ctx):
+        #send link to webiste
+        embed = discord.Embed(
+            title = "**WumpusHack.com! 🔗**",
+            url = "https://wumpushack.com",
             color = 0x7289da
         )
         await ctx.send(embed = embed)

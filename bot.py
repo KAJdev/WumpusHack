@@ -17,7 +17,7 @@ async def reload(ctx, module:str=None):
         return
 
     if module in initial_extensions and module != None:
-        await ctx.send("reloading cog %s..." % cog)
+        await ctx.send("reloading cog %s..." % module)
         bot.reload_extension(module)
         return
 

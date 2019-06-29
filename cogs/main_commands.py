@@ -160,6 +160,19 @@ class main_commands(commands.Cog):
         difference = time.time() - before
         print("Updated %s online users in %s seconds" % (updated_count, str(round(difference, 1))))
 
+
+    def check_ghost_users(self):
+        before = time.time()
+        docs = self.users_col.find({})
+        updated_count = 0
+        for doc in docs:
+            if discord.utils.get(self.bot.get_all_members(), id=int(doc['user_id'])) == None:
+                self.users_col.delete_one({'user_id': doc['user_id']})
+                updated_count += 1
+
+        difference = time.time() - before
+        print("Removed %s inactive users in %s seconds" % (updated_count, str(round(difference, 1))))
+
     #The base tick of the bot. controls how many times mine() gets called, and the times in between checking for cooldowns
     @tasks.loop(seconds=config.TICK_SPEED)
     async def tick(self):
@@ -170,6 +183,7 @@ class main_commands(commands.Cog):
         print("TICK " + str(self.tick_number))
 
         self.mine()
+        self.check_ghost_users()
         await self.check_timer_firewall()
         await self.check_timer_breach_cooldown()
         if round(time.time() - before, 1) > 5:
@@ -228,8 +242,8 @@ class main_commands(commands.Cog):
             if str(ctx.author.id) in self.cache.keys():
                 del self.cache[str(ctx.author.id)]
             embed = discord.Embed(
-                title = "Welcome to the WumpOS Inc. family!",
-                description = "Thank you for purchasing your new Wumpus system. Your Wumpus system is the way you can communicate with the world! Your computer is started, and ready to roll! Connect to your nation's help system to get the hang of things. \n(>connect help.gov)\n\nYour PC currently has pretty lame parts. Don't you want a god PC? Well first things first, you need money. Why don't you hack into some people by first getting their IP using `>scan`, and then connecting to them using `>connect <ip>`. After that, you can start a breach using `>breach`. If you can win, then you can steal some of their cash!\n\nWhen you have some cash, try visiting the the store (`>connect store.gov`) and looking at what is available that day. Taking a look at the bank is a good idea as well. Oh, and dont forget to check your mail!\n\noh! side note, Your PC parts actually do something! Each Tick (10s), you gain <:coin:592831769024397332> based on the GHz of your GPU. Every loading time, is based off you CPU, and the amount of money that you can steal from a user is based on your RAM. so, get to hacking!",
+                title = "WumpOS User Manual",
+                description = "Thank you for purchasing your new Wumpus system. Your Wumpus system is the way you can communicate with the world! Your computer is started, and ready to roll! Connect to your nation's help system to get the hang of things. \n(>connect help.gov)\n\nYour PC currently has pretty lame parts. Don't you want a god PC? Well first things first, you need money. Why don't you hack into some people by first getting their IP using `>scan`, and then connecting to them using `>connect <ip>`. After that, you can start a breach using `>breach`. If you can win, then you can steal some of their cash!\n\nWhen you have some cash, try visiting the the store (`>connect store.gov`) and looking at what is available that day. Taking a look at the bank is a good idea as well. Oh, and dont forget to check your mail!\n\noh! side note, Your PC parts actually do something! Each Tick (10s), you gain <:coin:592831769024397332> based on the GHz of your GPU. Every loading time, is based off your CPU, and the amount of money that you can steal from a user is based on your RAM. so, get to hacking!\n\n*if you ever need this message again, use >help*",
                 color = 0x35363B
             )
             await ctx.author.send(embed=embed)
@@ -542,13 +556,11 @@ class main_commands(commands.Cog):
 
         #Make sure you get an IP hats not yours
         try:
-            while True:
-                doc = self.users_col.find({'online': True})
+            doc = self.users_col.find({'online': True, 'ip': {'$nin': [user['ip']] }})
+            if doc.count() < 2:
+                doc = doc[0]
+            else:
                 doc = doc[random.randrange(doc.count()) - 1]
-                if doc['user_id'] == user['user_id']:
-                    continue
-                else:
-                    break
         except:
             await msg.edit(content="<:done:592819995843624961> `Scrape returned (0) addresses`")
             return
@@ -561,6 +573,18 @@ class main_commands(commands.Cog):
         if host_user != None:
             await host_user.send("`LOG: Recived ping from host "+user['ip']+"`")
 
+
+    @commands.command()
+    async def help(self, ctx):
+        if ctx.guild != None:
+            await ctx.message.delete()
+
+        embed = discord.Embed(
+            title = "WumpOS User Manual",
+            description = "Thank you for purchasing your new Wumpus system. Your Wumpus system is the way you can communicate with the world! Your computer is started, and ready to roll! Connect to your nation's help system to get the hang of things. \n(>connect help.gov)\n\nYour PC currently has pretty lame parts. Don't you want a god PC? Well first things first, you need money. Why don't you hack into some people by first getting their IP using `>scan`, and then connecting to them using `>connect <ip>`. After that, you can start a breach using `>breach`. If you can win, then you can steal some of their cash!\n\nWhen you have some cash, try visiting the the store (`>connect store.gov`) and looking at what is available that day. Taking a look at the bank is a good idea as well. Oh, and dont forget to check your mail!\n\noh! side note, Your PC parts actually do something! Each Tick (10s), you gain <:coin:592831769024397332> based on the GHz of your GPU. Every loading time, is based off your CPU, and the amount of money that you can steal from a user is based on your RAM. so, get to hacking!\n\n*if you ever need this message again, use >help*",
+            color = 0x35363B
+        )
+        await ctx.author.send(embed=embed)
 
     #We just got a letter, we just got a letter, we just got a letter. I wonder who its from? LOL
     @commands.command()
