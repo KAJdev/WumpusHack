@@ -426,7 +426,7 @@ class main_commands(commands.Cog):
                 if ip == 'bank.gov':
                     embed = discord.Embed(
                         title = "https://bank.gov",
-                        description = "Welcome to Bank.gov\n\nYour Balance:\n `" + str(user['balance']) + "`<:coin:592831769024397332>\n\n**Pay** - Send Money to other players:\n`>pay <IP Address> <Amount>`",
+                        description = "Welcome to Bank.gov\n\nYour Balance:\n `" + str(user['balance']) + "`<:coin:592831769024397332>\n\n**Pay** - Send Money to other players:\n`>pay <Email Address> <Amount>`",
                         color = 0x7289da
                     )
                     await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
@@ -739,10 +739,10 @@ class main_commands(commands.Cog):
 
     #Pay Command
     @commands.command()
-    async def pay(self, ctx, ip:str=None, amount:int=None):
+    async def pay(self, ctx, email:str=None, amount:int=None):
         #Grabs all profiles needed for this command
         author = self.users_col.find_one({'user_id': str(ctx.author.id)})
-        user = self.users_col.find_one({'ip': ip})
+        user = self.users_col.find_one({'email': email})
 
         if ctx.guild != None:
             await ctx.message.delete()
@@ -766,19 +766,21 @@ class main_commands(commands.Cog):
             await ctx.author.send("`LOG: (bank.gov) error in command`")
             return
 
+        #make sure its a whole number before the tests
+        amount = round(amount)
+
         #Check if they are a cheapskate
         if amount > author['balance']:
             await ctx.author.send("`LOG: Insufficient Funds`")
             return
-
-        if amount <= 0:
-            await ctx.author.send("`LOG: (bank.gov) Amount must be above 0`")
+        #No Cheapo
+        if amount <= 1:
+            await ctx.author.send("`LOG: (bank.gov) Amount must be above 1`")
             return
         #Take from one, and give to the other. Notify self.both parties.
         user_member = discord.utils.get(self.bot.get_all_members(), id = int(user['user_id']))
 
-        #make sure its a whole number
-        amount = round(amount)
+
 
         if user_member == None:
             await ctx.author.send("`LOG: (bank.gov) User not found.`")
@@ -786,8 +788,8 @@ class main_commands(commands.Cog):
 
         self.users_col.update_one({'user_id': author['user_id']}, {'$set': {'balance': author['balance'] - amount}})
         self.users_col.update_one({'user_id': user['user_id']}, {'$set': {'balance': author['balance'] + amount}})
-        await ctx.author.send("`LOG: (bank.gov) Sent "+ ip + " " + str(amount) + "`<:coin:592831769024397332>")
-        await user_member.send("`LOG: (bank.gov) You have recived " + str(amount) + "` <:coin:592831769024397332> `From: " + str(ctx.author) + "`")
+        await ctx.author.send("`LOG: (bank.gov) Sent "+ email + " " + str(amount) + "`<:coin:592831769024397332>")
+        await user_member.send("`LOG: (bank.gov) You have recived " + str(amount) + "` <:coin:592831769024397332> `From: " + author['email'] + "`")
 
     @commands.Cog.listener()
     async def on_message(self, message):
