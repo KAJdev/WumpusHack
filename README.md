@@ -26,42 +26,32 @@ Wumpus Hack has been developed by a team of four people.
 
 ## Commands
 #### All these commands are used in a DM with the bot, if not, msgs will be sent to DMs
-`Connect` - Connects to another PC.
-
-`Disconnect` - Disconnects from another PC.
-
-`System editcm <msg>` - Edits your connection message.
-
-`Github` - Sends a link to the github repository.
-
-`Invite` - Sends a link to invite me.
-
-`Login` - Logs onto your computer.
-
-`Logout` - Logs out of your computer.
-
-`Reset` - Resets all of your stats
-
-`Support` - Sends an invite link to the support server.
-
-`Breach` / Hack - Breach into someones computer/system.
-
-`Print` - Print a message in your computers log.
-
-`System / Stats / Sys` - Shows your system information.
-
-`Ping` - Gets Bots Ping
+| Command | Description |
+| ------------- | ------------- |
+| Connect | Connects to another PC. |
+| Disconnect | Disconnects from another PC or Server. |
+| System editcm <msg> | Edits your connection message. |
+| Pay | Pays an IP a set ammount of money from your account. |
+| Github | Sends a link to the github repository. |
+| Invite | Sends a link to invite me. |
+| Ping | Checks self.bot's Ping. |
+| Login | Logs onto your computer. |
+| Logout | Logs out of your computer. |
+| Reset | Resets all of your stats |
+| Support | Sends an invite link to the support server. |
+| Breach / Hack | Breach into someones computer/system. |
+| Print | Print a message in your computers log. |
+| System / Stats / Sys | Shows your system information. |
+| Notify | Toggles Email Notifications from mail.gov. |
 
 
 ### Government websites
-
-`store.gov` - buy and upgrade your pc!
-
-`help.gov` - this network.
-
-`mail.gov` - see your inbox, and send messages.
-
-`bank.gov` - send Money to Players.
+| IP Address | Description |
+| ------------- | ------------- |
+| store.gov | buy and upgrade your pc! |
+| help.gov | this network. |
+| mail.gov | see your inbox, and send messages. |
+| bank.gov | send Money to Players. |
 
 
 ## License
