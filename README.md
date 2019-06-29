@@ -17,6 +17,13 @@ Wumpus hack is a Discord bot made in python 3.6 that is a game all inside of dis
 ## Team
 Wumpus Hack has been developed by a team of four people.
 
+| Developer  | Role |
+| ------------- | ------------- |
+| Polar#5893 | Programmer |
+| KAJ7#0001 | Programmer |
+| Larvey#0001 | Programmer |
+| Ita Ash#8916 | Graphic Designer |
+
 1.) Polar#5893
 -Programmer
 
