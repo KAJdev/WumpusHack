@@ -34,7 +34,7 @@ class main_commands(commands.Cog):
 
         self.tick.start()
 
-        self.help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS system.\n**__Commands__**\n**Connect** - Connects to another PC.\n**Disconnect** - Disconnects from another PC or Server.\n**System editcm <msg>** - Edits your connection message.\n**Pay** - Pays an IP a set ammount of money from your account.\n**Github** - Sends a link to the github repository.\n**Invite** - Sends a link to invite me.\n**Ping** - Checks self.bot's Ping.\n**Login** - Logs onto your computer.\n**Logout** - Logs out of your computer.\n**Reset** - Resets all of your stats\n**Support** - Sends an invite link to the support server.\n**Breach / Hack** - Breach into someones computer/system.\n**Print** - Print a message in your computers log.\n**System / Stats / Sys** - Shows your system information.\n**Notify** - Toggles Email Notifications from mail.gov.\n\n**__Government websites__**\n**store.gov** - buy and upgrade your pc!\n**help.gov** - this network.\n**mail.gov** - see your inbox, and send messages.\n**bank.gov** - see your balance and send money to people."
+        self.help_string = "Welcome to help.gov. Here you can find a list of commands you can use on your WumpusOS System.\n**__Commands__**\n**Breach / Hack / Br / DDOS** - Hack into someone's PC\n**Connect** - Connects to another PC.\n**Disconnect** - Disconnects from another PC.\n**Github** - Sends a link to the Github repository.\n**Invite** - Sends a link to invite me.\n**Login** - Logs onto your PC.\n**Logout** - Logs out of your PC.\n**Notify** - Toggle Email notification from mail.gov.\n**Ping** - Check the bot's current Ping.\n**Print** - Send a message to your PC's logs, as well as the IP you are connected.\n**Scan** - Scans for IP addresses.\n**Support** - Sends an invite link to the WumpusHack Support Server.\n**System / Stats / Sys** - Shows your current stats.\n**System editcm <Message>** - Edits your current connection message.\n\n**__Government Websites__**\n**store.gov** - Buy and upgrade your PC!\n**help.gov** - This network.\n**mail.gov** - See your inbox, and send messages.\n**bank.gov** - See your balance and send money to people"
         self.shop_items = config.shop_items
         print("cog initiated")
 
@@ -236,9 +236,22 @@ class main_commands(commands.Cog):
             await ctx.author.send("**```WumpOS [version "+self.version+"]\n(c) 2019 Discord Inc. All rights reserved.\n\nC:\\Users\\%s>```**" % (str(ctx.author)))
 
             #Randomly generate an IP address
-            an_ip = str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255))
+            while True:
+                an_ip = str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255)) + "." + str(random.randint(1, 255))
+                ip_doc = self.users_col.find({'ip': an_ip})
+                if ip_doc.count() > 0:
+                    continue
+                else:
+                    break
+
+            email_test = self.users_col.find({'email': ctx.author.name.lower() + "@hackweek.com"})
+            if email_test.count() > 0:
+                users_email = ctx.author.name.lower() + str(email_test.count()) + "@hackweek.com"
+            else:
+                users_email = ctx.author.name.lower() + "@hackweek.com"
+
             #Make a quick account (its fast)
-            user = {'user_id': str(ctx.author.id), 'pc': self.basic_pc_stats, 'network': self.basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False, 'email': ctx.author.name.lower() + "@hackweek.com", 'notify': False}
+            user = {'user_id': str(ctx.author.id), 'pc': self.basic_pc_stats, 'network': self.basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False, 'email': users_email, 'notify': False}
             print('Inserting...')
             #Actually make the account (Its not so fast)
             self.users_col.insert_one(user)
@@ -727,7 +740,7 @@ class main_commands(commands.Cog):
     #Pay Command
     @commands.command()
     async def pay(self, ctx, ip:str=None, amount:int=None):
-        #grabs all profiles needed for this command
+        #Grabs all profiles needed for this command
         author = self.users_col.find_one({'user_id': str(ctx.author.id)})
         user = self.users_col.find_one({'ip': ip})
 
@@ -743,17 +756,17 @@ class main_commands(commands.Cog):
             raise commands.CommandNotFound
             return
 
-        #need to be connected to teh bank
+        #Need to be connected to teh bank
         elif self.cache[str(ctx.author.id)]['host'] != 'bank.gov':
             raise commands.CommandNotFound
             return
 
-        #if anything went wrong grabbing users just cancel
+        #If anything went wrong grabbing users just cancel
         if user == None or author == None or amount == None:
             await ctx.author.send("`LOG: (bank.gov) error in command`")
             return
 
-        #check if they are a cheapskate
+        #Check if they are a cheapskate
         if amount > author['balance']:
             await ctx.author.send("`LOG: Insufficient Funds`")
             return
@@ -761,8 +774,12 @@ class main_commands(commands.Cog):
         if amount <= 0:
             await ctx.author.send("`LOG: (bank.gov) Amount must be above 0`")
             return
-        #take from one, and give to the other. Notify self.both parties.
+        #Take from one, and give to the other. Notify self.both parties.
         user_member = discord.utils.get(self.bot.get_all_members(), id = int(user['user_id']))
+
+        #make sure its a whole number
+        amount = round(amount)
+
         if user_member == None:
             await ctx.author.send("`LOG: (bank.gov) User not found.`")
             return
@@ -774,12 +791,12 @@ class main_commands(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        #just a handy debug tool.
+        #Just a handy debug tool.
         if message.content.startswith(">"):
             print("Command: " + message.content)
             print("User: " + str(message.author))
 
-    #purchase command
+    #Purchase command
     @commands.command()
     async def purchase(self, ctx, *, id:str=None):
         user = self.users_col.find_one({'user_id': str(ctx.author.id)})
@@ -789,13 +806,13 @@ class main_commands(commands.Cog):
         if str(ctx.author.id) not in self.cache:
             raise commands.CommandNotFound
             return
-        #must be at the store to buy things
+        #Must be at the store to buy things
         elif self.cache[str(ctx.author.id)]['host'] != 'store.gov':
             raise commands.CommandNotFound
             return
 
 
-        #set the python random gen seed, and grab the first 5 items of the day
+        #Set the python random gen seed, and grab the first 5 items of the day
         random.seed(self.get_day_of_year())
         items = random.sample(config.shop_items, 5)
 
@@ -811,15 +828,15 @@ class main_commands(commands.Cog):
             await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to Network`")
             return
 
-        #thats not a product!
+        #Thats not a product!
         elif id == None:
             await ctx.author.send("`LOG: (store.gov) Please specify an ID to purchase`")
             return
 
-        # check to see if the Item they specified is in today's list of items
+        #Check to see if the Item they specified is in today's list of items
         elif any(d['name'] == id for d in items):
 
-            # grab that item object
+            #Grab that item object
             item = None
             for i in items:
                 if i['name'] == id:
@@ -828,13 +845,13 @@ class main_commands(commands.Cog):
                 await ctx.author.send("`LOG: (store.gov) unknown error occured when finding item.")
                 return
 
-            await ctx.author.send("`LOG: (store.gov) Are you sure you want to purchase this item? Respond with `Y` or `N")
+            await ctx.author.send("`LOG: (store.gov) Are you sure you want to purchase this item? Respond with 'Y' or 'N'`")
 
-            #start loop
+            #Start loop
             while True:
                 msg = await self.bot.wait_for('message')
                 if msg.content.lower() == "y" and msg.author.id == ctx.author.id and msg.channel.id == ctx.channel.id:
-                    # check for enough cash
+                    #Check for enough cash
                     if user['balance'] >= item['cost']:
                         # create a new PC dict
                         new_pc = {'cpu': user['pc']['cpu'], 'ram': user['pc']['ram'], 'gpu': user['pc']['gpu'], 'gpu_name': user['pc']['gpu_name'], 'cpu_name': user['pc']['cpu_name']}
@@ -847,7 +864,7 @@ class main_commands(commands.Cog):
                         self.users_col.update_one({'user_id': str(ctx.author.id)}, {'$set':{'balance': user['balance'] - item['cost'], 'pc': new_pc}})
 
                         #send confirmation message
-                        await ctx.author.send("`LOG: (store.gov)` You have just purchased `" + id + "` for " + str(item['cost']) + "<:coin:592831769024397332>!")
+                        await ctx.author.send("`LOG: (store.gov)` You have just purchased " + id + " for " + str(item['cost']) + "<:coin:592831769024397332>!`")
                         return
                     else:
                         await ctx.author.send("`LOG: (store.gov) Insufficient balance.`")
@@ -860,31 +877,31 @@ class main_commands(commands.Cog):
                     continue
         else:
             if id == 'firewall':
-                await ctx.author.send("`LOG: (store.gov) Are you sure you want to purchase this item? Respond with `Y` or `N")
+                await ctx.author.send("`LOG: (store.gov) Are you sure you want to purchase this item? Respond with 'Y' or 'N'`")
 
-                #start loop
+                #Start loop
                 while True:
                     msg = await self.bot.wait_for('message')
                     if msg.content.lower() == "y" and msg.author.id == ctx.author.id and msg.channel.id == ctx.channel.id:
                         # check for enough cash
                         if user['balance'] >= 10000:
 
-                            # create a new NET dict
+                            #Create a new NET dict
                             new_network = user['network']
 
-                            #check if there is already a timer started, if so, add one hour to existing timer.
+                            #Check if there is already a timer started, if so, add one hour to existing timer.
                             if new_network['firewall'] != False:
                                 new_network['firewall'] = float(new_network['firewall']) + 3600
 
                             else:
-                                #otherwise, just add a timer oh 1 hour.
+                                #Otherwise, just add a timer oh 1 hour.
                                 new_network['firewall'] = str(time.time() + 3600)
 
-                            #update dict in databse with timer set to one hour in the future
+                            #Update dict in databse with timer set to one hour in the future
                             self.users_col.update_one({'user_id': str(ctx.author.id)}, {'$set': {'network': new_network, 'balance': user['balance'] - 10000}})
 
-                            #send confirmation message
-                            await ctx.author.send("`LOG: (store.gov)` You have just purchased `one hour of Firewall protection` for `10000` <:coin:592831769024397332>!")
+                            #Send confirmation message
+                            await ctx.author.send("`LOG: (store.gov) You have just purchased 'One hour of Firewall protection' for 10000 <:coin:592831769024397332>!'")
                             return
                         else:
                             await ctx.author.send("`LOG: (store.gov) Insufficient balance.`")
@@ -906,36 +923,36 @@ class main_commands(commands.Cog):
             if ctx.guild != None:
                 await ctx.message.delete()
 
-            #get user docuemnt from DB and check if they have an account
+            #Get user docuemnt from DB and check if they have an account
             doc = self.users_col.find_one({'user_id': str(ctx.author.id)})
             if doc == None:
                 await ctx.author.send("`Please type >login to start your adventure!`")
                 return
 
-            #check for online status
+            #Check for online status
             if doc['online'] == False:
                 await ctx.author.send("`Your computer is not online. Please >login`")
                 return
 
             else:
-                #display firewall cooldown if active
+                #Display firewall cooldown if active
                 if doc['network']['firewall'] != False:
                     firewall_time = round(float(doc['network']['firewall'])  - time.time())
                     doc['network']['firewall'] = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(firewall_time))
 
-                #base system display with PC specs and such
+                #Base system display with PC specs and such
                 sys_string = "**__Computer Information__**\n**RAM** - "+str(doc['pc']['ram'])+ " GB\n**CPU** - "+str(doc['pc']['cpu'])+" GHz `"+doc['pc']['cpu_name']+"`\n**GPU** - "+str(doc['pc']['gpu'])+" GHz `"+doc['pc']['gpu_name']+"`\n\n**__Network Information__**\n**Bandwidth** - "+str(doc['network']['bandwidth'] + 10   )+" Mbps\n**Firewall** - "+str(doc['network']['firewall'])+"\n**IP Address** - ||"+doc['ip']+"||\n\n**__Other Information__**\n**Balance** - "+str(doc['balance'])+" <:coin:592831769024397332>\n**Connection Message** - "+doc['connect_msg']
 
                 if str(ctx.author.id) in self.cache.keys():
-                    #grab hosts info to display
+                    #Grab hosts info to display
                     host_email = self.users_col.find_one({'ip': self.cache[str(ctx.author.id)]['host']})
                     sys_string = sys_string + "\n\n**__Connection__**\n**Host** - "+self.cache[str(ctx.author.id)]['host']
 
-                    # show email if connected to PC
+                    #Show email if connected to PC
                     if self.cache[str(ctx.author.id)]['type'] == 1 and host_email != None:
                         sys_string = sys_string + "\n**Host's Email** - "+str(host_email['email'])
 
-                #show breach duration if they have a cooldown active
+                #Show breach duration if they have a cooldown active
                 if doc['breach'] != False and doc['breach'] != True:
                     breach_time = "Expires in " + time.strftime('%Hh%Mm%Ss', time.gmtime(round(float(doc['breach'])  - time.time())))
                     sys_string = sys_string + "\n\n**Breach Cooldown** - " + breach_time
@@ -945,7 +962,7 @@ class main_commands(commands.Cog):
                     description = sys_string,
                     color = 0x7289da
                 )
-                #send message
+                #Send message
                 msg = await ctx.author.send("<a:loading2:592819419604975797> `Obtaining system information...`")
                 await asyncio.sleep(self.calc_loading(doc, 5))
                 await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
@@ -964,12 +981,12 @@ class main_commands(commands.Cog):
             await ctx.author.send("`Your computer is not online. Please >login`")
             return
 
-        #create field in DB if not already there
+        #Create field in DB if not already there
         if 'notify' not in user.keys():
             self.users_col.update_one(user, {'$set': {'notify': True}})
             await ctx.author.send("`LOG: Notifications are now set to: True`")
         else:
-            #toggle the value in the DB
+            #Toggle the value in the DB
             self.users_col.update_one(user, {'$set': {'notify': not user['notify']}})
             await ctx.author.send("`LOG: Notifications are now set to: %s`" % (str(not user['notify'])))
 
@@ -977,10 +994,10 @@ class main_commands(commands.Cog):
 
     @commands.command(aliases=['hack', 'br', 'ddos'])
     async def breach(self, ctx):
-        #not the best way to do this, but.. I didn't do it (kaj) and it works. and we only have a week.
+        #Not the best way to do this, but.. I didn't do it (kaj) and it works. and we only have a week.
         user = self.users_col.find_one({'user_id': str(ctx.author.id)})
 
-        #make sure they dont have a cooldown False = no cooldown, timestamp - cooldown
+        #Make sure they dont have a cooldown False = no cooldown, timestamp - cooldown
         if user['breach'] == False:
             if ctx.guild != None:
                 await ctx.message.delete()
@@ -994,12 +1011,12 @@ class main_commands(commands.Cog):
                 await ctx.author.send("<:bad:593862973274062883> `SocketError: Not connected to Network`")
                 return
 
-            #if they arent a PC, then u cant hack it
+            #If they arent a PC, then u cant hack it
             if self.cache[str(ctx.author.id)]['type'] != 1:
                 await ctx.author.send("<:bad:593862973274062883> `Error: Server refused packets`")
                 return
 
-            #if they are already in a breach, you cant hack them again.
+            #If they are already in a breach, you cant hack them again.
             if self.cache[str(ctx.author.id)]['type'] == 4:
                 await ctx.author.send("<:bad:593862973274062883> `Error: Port already open.`")
                 return
@@ -1015,25 +1032,25 @@ class main_commands(commands.Cog):
                         if self.cache[str(host_member.id)]['type'] == 4:
                             await ctx.author.send("`LOG: Error sending breach packets`")
                             return
-                    #sets connection as to not let you >dc or >logout
+                    #Sets connection as to not let you >dc or >logout
                     self.cache[str(host_member.id)] = {'status': False, 'type': 4, 'host': "**BREACH**"}
                     breacher = ctx.author
 
-                    #give a cooldown now in case something happens
+                    #Give a cooldown now in case something happens
                     hackercooldownadd = { '$set': {'breach': str(time.time() + 600)}}
                     givecooldown = self.users_col.update_one({'user_id': str(breacher.id)}, hackercooldownadd)
 
-                    #send the host a message, and start the show!
+                    #Send the host a message, and start the show!
                     await ctx.author.send("`BREACH: A breach attack has been started... Sent initiation packets, awaiting host.`")
                     await self.breach_host(host_member, host_doc, ctx, user, breacher)
                 else:
-                    await ctx.author.send("<:bad:593862973274062883> `Error: unknown error in getting user`")
+                    await ctx.author.send("<:bad:593862973274062883> `Error: Unknown error in getting user`")
             else:
-                await ctx.author.send("<:bad:593862973274062883> `Error: unknown error in getting document`")
+                await ctx.author.send("<:bad:593862973274062883> `Error: Unknown error in getting document`")
         else:
             await ctx.author.send("<:bad:593862973274062883> `INFO: Your Breach Cooldown is still in effect.`")
 
-    #gets a random question, and answer from an API. with a backup
+    #Gets a random question, and answer from an API. with a backup
     def get_random_q_a(self):
         cat = self.categories[random.randint(0, len(self.categories) - 1)]
         dif = self.difficulties[random.randint(0, len(self.difficulties) - 1)]
@@ -1160,6 +1177,9 @@ class main_commands(commands.Cog):
             victim = self.users_col.find_one({'user_id': str(host_member.id)})#Gets Victims Document
             victims_funds = victim['balance']#Gets current balance
             ammount_toTake = int(victims_funds) / (user['pc']['ram'] * 1.9)
+
+            #make sure its a whole number
+            ammount_toTake = round(ammount_toTake)
 
             #Transfers Money
             victims_oldfunds = {'user_id': str(host_member.id)}
@@ -1337,15 +1357,15 @@ class main_commands(commands.Cog):
     #Command not found
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        #always make sure to leave no clutter in a guild.
+        #Always make sure to leave no clutter in a guild.
         if ctx.guild != None:
             await ctx.message.delete()
 
-        #no command? *gasp*
+        #No command? *gasp*
         if isinstance(error, commands.CommandNotFound):
             await ctx.author.send('<:bad:593862973274062883> `"%s" is not recognized as an internal or external command, operable program or batch file.`' % (ctx.message.content))
 
-        #print the error if debug is enabled
+        #Print the error if debug is enabled
         if config.DEBUG_STATUS == True:
             raise error
 
