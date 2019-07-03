@@ -15,8 +15,8 @@ class main_commands(commands.Cog):
         self.Trivia = Trivia(True)
 
         wumpdb = pymongo.MongoClient(config.URI)["wumpus-hack"]
-        self.users_col = wumpdb['users']
-        self.mail_col = wumpdb['mail']
+        self.users_col = wumpdb['users-beta']
+        self.mail_col = wumpdb['mail-beta']
 
         self.owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
 
@@ -258,14 +258,14 @@ class main_commands(commands.Cog):
                 else:
                     break
 
-            email_test = self.users_col.find({'email': ctx.author.name.lower() + "@hackweek.com"})
+            email_test = self.users_col.find({'email': ctx.author.name.lower() + "@beta.com"})
             if email_test.count() > 0:
-                users_email = ctx.author.name.lower() + str(email_test.count()) + "@hackweek.com"
+                users_email = ctx.author.name.lower() + str(email_test.count()) + "@beta.com"
             else:
-                users_email = ctx.author.name.lower() + "@hackweek.com"
+                users_email = ctx.author.name.lower() + "@beta.com"
 
             #Make a quick account (its fast)
-            user = {'user_id': str(ctx.author.id), 'pc': self.basic_pc_stats, 'network': self.basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False, 'email': users_email, 'notify': False}
+            user = {'user_id': str(ctx.author.id), 'pc': self.basic_pc_stats, 'network': self.basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False, 'email': users_email, 'notify': False, 'inventory': []}
             print('Inserting...')
             #Actually make the account (Its not so fast)
             self.users_col.insert_one(user)
@@ -515,6 +515,9 @@ class main_commands(commands.Cog):
     #Scan for people who exist
     @commands.command(aliases=['scrape'])
     async def scan(self, ctx):
+        if ctx.guild != None:
+            await ctx.message.delete()
+
         #Get a profile
         user = self.users_col.find_one({'user_id': str(ctx.author.id)})
         #Make sure they exist
@@ -886,17 +889,13 @@ class main_commands(commands.Cog):
                     #Check for enough cash
                     if user['balance'] >= item['cost']:
                         # create a new PC dict
-                        new_pc = {'cpu': user['pc']['cpu'], 'ram': user['pc']['ram'], 'gpu': user['pc']['gpu'], 'gpu_name': user['pc']['gpu_name'], 'cpu_name': user['pc']['cpu_name']}
+                        user['inventory'].append(item)
 
-                        #replace the items modifying type with what the user bought
-                        new_pc[item['type']] = item['system']
-                        new_pc[item['type']+'_name'] = item['name']
-
-                        # pdate the document in the database
-                        self.users_col.update_one({'user_id': str(ctx.author.id)}, {'$set':{'balance': user['balance'] - item['cost'], 'pc': new_pc}})
+                        # udate the document in the database
+                        self.users_col.update_one({'user_id': str(ctx.author.id)}, {'$set':{'balance': user['balance'] - item['cost'], 'inventory': user['inventory']}})
 
                         #send confirmation message
-                        await ctx.author.send("`LOG: (store.gov)` You have just purchased " + id + " for " + str(item['cost']) + "<:coin:592831769024397332>!`")
+                        await ctx.author.send("`LOG: (store.gov)` You have just purchased " + id + " for " + str(item['cost']) + "` <:coin:592831769024397332> `. You can view it in your Inventory.`")
                         return
                     else:
                         await ctx.author.send("`LOG: (store.gov) Insufficient balance.`")
@@ -933,7 +932,7 @@ class main_commands(commands.Cog):
                             self.users_col.update_one({'user_id': str(ctx.author.id)}, {'$set': {'network': new_network, 'balance': user['balance'] - 10000}})
 
                             #Send confirmation message
-                            await ctx.author.send("`LOG: (store.gov) You have just purchased 'One hour of Firewall protection' for 10000 <:coin:592831769024397332>!'")
+                            await ctx.author.send("`LOG: (store.gov) You have just purchased 'One hour of Firewall protection' for 10000 ` <:coin:592831769024397332>!")
                             return
                         else:
                             await ctx.author.send("`LOG: (store.gov) Insufficient balance.`")
@@ -998,6 +997,34 @@ class main_commands(commands.Cog):
                 msg = await ctx.author.send("<a:loading2:592819419604975797> `Obtaining system information...`")
                 await asyncio.sleep(self.calc_loading(doc, 5))
                 await msg.edit(content="<:done:592819995843624961> `System information retreived`", embed=embed)
+
+    @system.command()
+    async def use(self, ctx, id:str=None):
+        if ctx.guild != None:
+            await ctx.message.delete()
+
+        user = self.users_col.find_one({'user_id': str(ctx.author.id)})
+        if user == None:
+            await ctx.author.send("`Please type >login to start your adventure!`")
+            return
+
+        if user['online'] == False:
+            await ctx.author.send("`Your computer is not online. Please >login`")
+            return
+
+
+        try:
+            id = int(id)
+        except:
+            await ctx.author.send("`ERROR: component ID is not valid.`")
+            return
+
+        new_pc = user['pc']
+        new_pc[user['inventory'][id]['type']] = user['inventory'][id]['system']
+        new_pc[user['inventory'][id]['type'] + '_name'] = user['inventory'][id]['name']
+        self.users_col.update({'user_id': user['user_id']}, {'$set': { 'pc': new_pc}})
+        await ctx.author.send("`LOG: switched %s %s with %s`" % (user['inventory'][id]['type'].upper(), user['pc'][user['inventory'][id]['type'] + '_name'], new_pc[user['inventory'][id]['type'] + '_name']))
+
 
     @system.command()
     async def notify(self, ctx):

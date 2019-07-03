@@ -32,8 +32,8 @@ class utils(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         #change name on guild join.
-        await guild.me.edit(nick="WumpusHack")
-        print("WumpusHack Joined "+ str(guild))
+        await guild.me.edit(nick="WumpusHack PTB")
+        print("WumpusHack PTB Joined "+ str(guild))
 
     #Github
     @commands.command()
