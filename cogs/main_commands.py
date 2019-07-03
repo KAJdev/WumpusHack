@@ -26,10 +26,10 @@ class main_commands(commands.Cog):
 
         self.basic_pc_stats = {'ram': 1, 'cpu': 1, 'gpu': 1, 'cpu_name': "Intel Atom", 'gpu_name': "Integrated Graphics"}
         self.basic_network_stats = {'bandwidth': 1, 'ddos_pro': False, 'firewall': False}
-        self.game_sites=['help.gov', 'store.gov', '0.0.0.1', 'mail.gov', 'wumpushack.com', 'bank.gov', 'leaderboard.gov']
+        self.game_sites=['help.gov', 'store.gov', 'mail.gov', 'wumpushack.com', 'bank.gov', 'leaderboard.gov']
 
         self.cache = {'away': {}}
-        self.version = "2019.2.1.20b"
+        self.version = "2019.2.2.0b"
         self.tick_number = 0
 
         self.tick.start()
@@ -258,11 +258,11 @@ class main_commands(commands.Cog):
                 else:
                     break
 
-            email_test = self.users_col.find({'email': ctx.author.name.lower() + "@beta.com"})
+            email_test = self.users_col.find({'email': ctx.author.name.lower() + "@wumpushack.com"})
             if email_test.count() > 0:
-                users_email = ctx.author.name.lower() + str(email_test.count()) + "@beta.com"
+                users_email = ctx.author.name.lower() + str(email_test.count()) + "@wumpushack.com"
             else:
-                users_email = ctx.author.name.lower() + "@beta.com"
+                users_email = ctx.author.name.lower() + "@wumpushack.com"
 
             #Make a quick account (its fast)
             user = {'user_id': str(ctx.author.id), 'pc': self.basic_pc_stats, 'network': self.basic_network_stats, 'online': True, 'balance': 100, 'ip': an_ip, 'connect_msg': "Hello. I am a PC.", 'breach': False, 'email': users_email, 'notify': False, 'inventory': []}
@@ -321,7 +321,7 @@ class main_commands(commands.Cog):
                     #Grab his connection from self.cache
                     outgoing = self.cache[str(ctx.author.id)]
                     #If the type is to another PC
-                    if outgoing['type'] == 1:
+                    if outgoing['type'] != 4:
                         #Grab the profile of the person our buddy is connected to
                         host_doc = self.users_col.find_one({'ip':outgoing['host']})
                         if host_doc != None:
@@ -417,15 +417,6 @@ class main_commands(commands.Cog):
                         color = 0x7289da
                     )
                     await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s:`" % (ip), embed=embed)
-                    self.cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
-                    return
-                if ip == '0.0.0.1':
-                    embed = discord.Embed(
-                        title = "Discord Hack Week",
-                        description = "Thank You so much Discord Hack week for making this be possible.\nWe couldn't have done it withough you!",
-                        color = 0x7289da
-                    )
-                    await msg.edit(content="<:done:592819995843624961> `You have successfully connected to %s`" % (ip), embed = embed)
                     self.cache[str(ctx.author.id)] = {'status': True, 'type': 2, 'host': ip}
                     return
                 if ip == 'wumpushack.com':
