@@ -1225,7 +1225,7 @@ class main_commands(commands.Cog):
             hacker = self.users_col.find_one({'user_id': str(breacher.id)})#Gets Hackers Document
             victim = self.users_col.find_one({'user_id': str(host_member.id)})#Gets Victims Document
             victims_funds = victim['balance']#Gets current balance
-            ammount_toTake = int(victims_funds) / (user['pc']['ram'] * 1.9)
+            ammount_toTake = int(victims_funds) * ((user['pc']['ram'] * 1.9) / 100)
 
             #make sure its a whole number
             ammount_toTake = round(ammount_toTake)
