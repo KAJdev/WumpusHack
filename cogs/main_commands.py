@@ -131,6 +131,7 @@ class main_commands(commands.Cog):
             await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="bot starting..."))
 
         #Yay more stats
+        self.users_col.update({}, {'$set': {'inventory': []}})
         print("Bot is ready and online.")
         print("Servers: %s, Ping: %s ms, Startup time: %s seconds" % (len(self.bot.guilds), self.bot.latency * 1000, str(round(time.time() - before_startup, 2))))
 
@@ -1122,19 +1123,17 @@ class main_commands(commands.Cog):
             #Take all valid responses, and randomise order, and turn into one string.
             tr['results'][0]['incorrect_answers'].append(answer)
             random.shuffle(tr['results'][0]['incorrect_answers'])
+            correct = tr['results'][0]['incorrect_answers'].index(answer) + 1
             print(tr)
-            i = 0
+            i = 1
             for a in tr['results'][0]['incorrect_answers']:
-                if i == 0:
-                    all_a = all_a + str(a)
-                else:
-                    all_a = all_a +", "+str(a)
+                all_a = all_a + str(i) + ": " + a + "\n"
                 i += 1
 
         #Always give question and answer
-        return catstring, all_a, question, answer
+        return catstring, all_a, question, str(correct)
 
-    #The functiuons nthat we may or may not use (Spoiler alert we do)
+    #The functiuons that we may or may not use (Spoiler alert we do)
     async def breach_starter(self, host_member, host_doc, ctx, user, breacher):
         #Ugh welp.. good luck understanding this tbh
 
