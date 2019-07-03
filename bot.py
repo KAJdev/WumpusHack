@@ -14,7 +14,7 @@ for cog in initial_extensions:
     bot.load_extension(cog)
 print("cogs loaded")
 
-@bot.command(name="ptb-reload")
+@bot.command(name="reload")
 async def reload(ctx, module:str=None):
     if ctx.author.id not in [229695200082132993, 245653078794174465, 282565295351136256]:
         return
