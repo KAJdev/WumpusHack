@@ -896,7 +896,11 @@ class main_commands(commands.Cog):
                         self.users_col.update_one({'user_id': str(ctx.author.id)}, {'$set':{'balance': user['balance'] - item['cost'], 'pc': new_pc}})
 
                         #send confirmation message
+<<<<<<< Updated upstream
                         await ctx.author.send("`LOG: (store.gov)` You have just purchased " + id + " for " + str(item['cost']) + "<:coin:592831769024397332>!`")
+=======
+                        await ctx.author.send("`LOG: (store.gov) You have just purchased` " + id + " for " + str(item['cost']) + "<:coin:592831769024397332>.` You can view it in your Inventory.`")
+>>>>>>> Stashed changes
                         return
                     else:
                         await ctx.author.send("`LOG: (store.gov) Insufficient balance.`")
