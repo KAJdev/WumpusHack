@@ -15,8 +15,8 @@ class main_commands(commands.Cog):
         self.Trivia = Trivia(True)
 
         wumpdb = pymongo.MongoClient(config.URI)["wumpus-hack"]
-        self.users_col = wumpdb['users-beta']
-        self.mail_col = wumpdb['mail-beta']
+        self.users_col = wumpdb['users']
+        self.mail_col = wumpdb['mail']
 
         self.owner_ids = [229695200082132993, 245653078794174465, 282565295351136256]
 

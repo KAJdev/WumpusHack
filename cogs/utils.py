@@ -33,6 +33,8 @@ class utils(commands.Cog):
     async def on_guild_join(self, guild):
         #change name on guild join.
         await guild.me.edit(nick="WumpusHack")
+        channel = bot.get_channel(592787448107368448)
+        await channel.send(f"WumpusHack Joined {str}")
         print("WumpusHack Joined "+ str(guild))
 
     #Github
