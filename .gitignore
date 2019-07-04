@@ -7,3 +7,4 @@ cogs/__pycache__/main_commands.cpython-36.pyc
 cogs/__pycache__/utils.cpython-36.pyc
 config.py
 config.py
+.DS_Store
